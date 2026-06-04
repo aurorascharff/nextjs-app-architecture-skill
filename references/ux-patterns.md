@@ -8,7 +8,7 @@ Wire your toast library through a single import so the call sites stay clean. Us
 
 ```tsx
 'use client';
-import { toast } from '@/lib/toast';
+import { toast } from '@/lib/toast'; // your toast library
 import { createPost } from '@/features/post/post-actions';
 
 async function submitAction(formData: FormData) {
@@ -52,7 +52,7 @@ For delete / leave / unsubscribe flows:
 'use client';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from '@/lib/toast';
+import { toast } from '@/lib/toast'; // your toast library
 import { deletePost } from '@/features/post/post-actions';
 
 export function DeletePostDialog({ postId }: { postId: string }) {

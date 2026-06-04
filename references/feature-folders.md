@@ -77,7 +77,7 @@ See `references/components.md` for inlining rules and the skeleton design checkl
 Pages in `app/` compose feature components with Suspense and transition wrappers. They never:
 
 - Contain domain logic
-- Define new components except wrappers like `<NavForward>`
+- Define new components except thin transition wrappers (e.g. `<ViewTransition>`)
 - Fetch data directly
 - Inline route-specific components — extract them into the feature folder
 

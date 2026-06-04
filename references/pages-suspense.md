@@ -7,7 +7,7 @@ How to compose pages, place Suspense boundaries, and prevent layout shift.
 Pages in `app/` import feature components and place `<Suspense>` boundaries. They never:
 
 - Fetch data directly (queries live in feature folders)
-- Define new components except wrappers (e.g. `<NavForward>`)
+- Define new components except thin transition wrappers (e.g. `<ViewTransition>`)
 - Inline route-specific UI (extract it into the feature folder)
 
 ## Page function signatures
@@ -32,7 +32,7 @@ import { PostDetail, PostDetailSkeleton } from '@/features/post/components/post-
 export default function PostPage({ params }: PageProps<'/post/[id]'>) {
   return (
     <div>
-      <PageHeader back title="Post" />
+      <h1>Post</h1>
       <Suspense fallback={<PostDetailSkeleton />}>
         {params.then(({ id }) => (
           <PostDetail id={id} />
@@ -43,7 +43,7 @@ export default function PostPage({ params }: PageProps<'/post/[id]'>) {
 }
 ```
 
-Page chrome (`<PageHeader>`) sits **above** the `params.then()` so it paints instantly. The `Suspense` fallback covers only the dynamic section.
+The `<h1>` sits **above** the `params.then()` so it paints instantly. The `Suspense` fallback covers only the dynamic section.
 
 ### `searchParams` and combined params
 
@@ -133,7 +133,7 @@ export function PostDetailSkeleton() { ... }
 </Suspense>
 ```
 
-If a page uses a transition wrapper (e.g. `<NavForward>`), place it in the page next to the `<Suspense>` boundary. Feature components render content and skeletons, not transition wrappers.
+If a page uses a transition wrapper (e.g. `<ViewTransition>`), place it in the page next to the `<Suspense>` boundary. Feature components render content and skeletons, not transition wrappers.
 
 ## Don't create page-local wrapper components
 
