@@ -15,9 +15,14 @@ Pages in `app/` import feature components and place `<Suspense>` boundaries. The
 Type page and layout functions with the generated `PageProps<'/route'>` and `LayoutProps<'/route'>` helpers — they're emitted by [`typedRoutes`](https://nextjs.org/docs/app/api-reference/config/next-config-js/typedRoutes) and give you the correct `params` / `searchParams` / `children` shape for that exact route.
 
 ```tsx
+// app/post/[id]/page.tsx
 export default function PostPage({ params }: PageProps<'/post/[id]'>) {
   /* ... */
 }
+```
+
+```tsx
+// app/post/[id]/layout.tsx
 export default function PostLayout({ children, params }: LayoutProps<'/post/[id]'>) {
   /* ... */
 }
