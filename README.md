@@ -1,6 +1,6 @@
 # Next.js App Architecture Skill
 
-An agent skill that teaches AI coding agents the **component architecture for React Server Components** patterns from [this blog post](https://aurorascharff.no/posts/component-architecture-for-react-server-components/).
+An agent skill for **Next.js 16+ App Router** apps. It teaches AI coding agents the component architecture for React Server Components patterns from [this blog post](https://aurorascharff.no/posts/component-architecture-for-react-server-components/).
 
 ## The core
 
@@ -42,7 +42,7 @@ Required reading for any RSC Next.js app.
 
 Additional patterns for making the app feel instant. Reach for these only when the task calls for them.
 
-- **`references/cache-components.md`** — `cacheComponents: true`, `'use cache'` / `private` / `remote`, `cacheTag` / `cacheLife`, `updateTag`, `connection()`
+- **`references/cache-components.md`** — `cacheComponents: true`, `'use cache'` / `'use cache: private'` / `'use cache: remote'`, `cacheTag` / `cacheLife`, `updateTag`, `connection()`
 - **`references/ux-patterns.md`** — `useOptimistic`, toasts, `data-pending`, destructive flows, action-prop pattern, URL pagination, `useFormStatus`
 
 ## Companion skills
