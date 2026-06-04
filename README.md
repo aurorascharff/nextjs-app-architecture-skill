@@ -33,6 +33,10 @@ Install via [skills.sh](https://skills.sh):
 npx skills install https://github.com/aurorascharff/nextjs-app-architecture-skill
 ```
 
+## Companion skills
+
+- [React View Transitions](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-view-transitions) — `<ViewTransition>`, `addTransitionType`, directional navigation, shared elements, Suspense reveals, CSS recipes. Pairs naturally with this skill's `<NavForward>` / `<NavBack>` page-wrapper pattern.
+
 ## Resources
 
 - [Next.js App Router docs](https://nextjs.org/docs/app)
