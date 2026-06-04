@@ -176,62 +176,10 @@ export function TagPicker({ itemsPromise }: { itemsPromise: Promise<Tag[]> }) {
 
 The opinionated bit: name promise props with a `Promise` suffix (`itemsPromise`, `userPromise`) so the contract is obvious at the call site.
 
-## Caching a whole component
-
-If the entire component output can be cached, put `'use cache'` on the component directly instead of on the query:
-
-```tsx
-async function TrendingTags() {
-  'use cache';
-  cacheTag('trending');
-  cacheLife('minutes');
-
-  const tags = await db.tag.findMany({ orderBy: { count: 'desc' }, take: 6 });
-  return (
-    <ul>
-      {tags.map(t => (
-        <li key={t.name}>#{t.name}</li>
-      ))}
-    </ul>
-  );
-}
-```
-
-This caches the rendered HTML, not just the query result. Useful for components with expensive rendering or shared content across users. See `references/cache-components.md` for when this is safe.
-
 ## Live data via polling
 
-For features that reflect server-side updates without user action (other users posting, new notifications, vote counts changing), drop a `<Poller>` client component into the page that calls [`router.refresh()`](https://nextjs.org/docs/app/api-reference/functions/use-router) on an interval. Combined with `'use cache'` + `cacheLife('seconds')`, queries return cached data until they expire, then the next refresh picks up new data. No WebSockets, no SSE — just the existing cache cycle.
+For features that reflect server-side updates without user action (other users posting, new notifications, vote counts changing), drop a `<Poller>` client component into the page that calls [`router.refresh()`](https://nextjs.org/docs/app/api-reference/functions/use-router) on an interval. The router re-renders the server components for the current user; cached queries (if any) return stale data until they expire.
 
-## `useOptimistic` for mutations
+## Mutations
 
-For instant feedback on mutations that are unlikely to fail (favorite, vote, follow), use [`useOptimistic`](https://react.dev/reference/react/useOptimistic):
-
-```tsx
-'use client';
-import { useOptimistic, useTransition } from 'react';
-
-export function FavoriteButton({ slug, favorited }: { slug: string; favorited: boolean }) {
-  const [optimisticFavorited, setOptimisticFavorited] = useOptimistic(favorited);
-  const [, startTransition] = useTransition();
-
-  function handleClick() {
-    startTransition(async () => {
-      setOptimisticFavorited(!favorited);
-      await toggleFavorite(slug);
-    });
-  }
-
-  return <button onClick={handleClick}>{optimisticFavorited ? '★' : '☆'}</button>;
-}
-```
-
-Key rules (the rest is in the React docs):
-
-- Call `setOptimistic` inside a [transition](https://react.dev/reference/react/useTransition), not as a free update.
-- Inside `<form action={…}>`, React opens the transition for you — you can call `setOptimistic` directly in the action body.
-- For counter-style updates, pass a reducer as the second argument so the next value is derived from the current one (vote counts, like counts).
-
-For non-optimistic pending UI (filters, sort changes, deferred work), use `useTransition` with the `data-pending` pattern in `references/ux-patterns.md`. For success/error feedback rules, see the same reference.
-
-For the deeper picture (coordinating `useTransition`, `useOptimistic`, `useActionState`, `data-pending`, Suspense streaming, and caching across server and client), see the [Interactive Apps guide PR](https://github.com/vercel/next.js/pull/94020) — not merged yet, but the canonical reference until it lands at `nextjs.org/docs/app/guides/interactive-apps`.
+For client-side reactions to a server mutation (instant feedback, pending state, success/error toasts), see `references/ux-patterns.md`. To cache rendered output across requests, see `references/cache-components.md`.

@@ -2,6 +2,8 @@
 
 The data layer. Every feature has both: queries to read, actions to write.
 
+This page covers the universal data layer that applies to every Next.js App Router app. For the opt-in Cache Components model (`'use cache'`, `cacheTag`, `cacheLife`, `updateTag`), see `references/cache-components.md`.
+
 ## Queries
 
 Create `features/<domain>/<domain>-queries.ts`. Mark it `import 'server-only'`. Wrap every export in [`cache()`](https://react.dev/reference/react/cache) from React for **request-level deduplication** — same query called from multiple components in the same render hits the database once.
@@ -15,28 +17,7 @@ export const getFeed = cache(async (userId: string) => {
 });
 ```
 
-### With Cache Components
-
-If [`cacheComponents: true`](https://nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents) is enabled, add [`'use cache'`](https://nextjs.org/docs/app/api-reference/directives/use-cache) plus [`cacheTag`](https://nextjs.org/docs/app/api-reference/functions/cache-tag) and [`cacheLife`](https://nextjs.org/docs/app/api-reference/functions/cache-life) to make the query cacheable across requests:
-
-```ts
-import 'server-only';
-import { cacheLife, cacheTag } from 'next/cache';
-import { cache } from 'react';
-
-export const getFeed = cache(async (userId: string) => {
-  'use cache';
-  cacheTag('feed', `feed-${userId}`);
-  cacheLife('seconds');
-  return db.post.findMany({ where: { userId } });
-});
-```
-
-The opinionated bit: tag at **two granularities** — a global tag (`'feed'`) and a scoped tag (`` `feed-${userId}` ``) — so the matching action can invalidate at either. See `references/cache-components.md` for the full model, `private` / `remote` variants, and the `connection()` escape hatch.
-
-### Without Cache Components
-
-If `cacheComponents` is not enabled, skip `'use cache'`. Keep `cache()` for request-level dedup. Invalidate via [`refresh()`](https://nextjs.org/docs/app/api-reference/functions/refresh) from actions instead of [`updateTag()`](https://nextjs.org/docs/app/api-reference/functions/update-tag).
+That's the floor: every query is server-only and request-deduplicated. If you turn on Cache Components, you'll also add `'use cache'` + `cacheTag` to share results across requests — see `references/cache-components.md`.
 
 ## Actions
 
@@ -45,13 +26,13 @@ Create `features/<domain>/<domain>-actions.ts`. Mark with `'use server'` at the 
 1. Verify auth.
 2. Validate input with your schema validator.
 3. Run the mutation.
-4. Invalidate cached data.
+4. Invalidate cached data so the next render sees the new state.
 5. Return a result (`{ ok }` or `{ error }`).
 
 ```tsx
 'use server';
 
-import { updateTag } from 'next/cache';
+import { refresh } from 'next/cache';
 
 export async function createPost(formData: FormData) {
   const user = await verifyUser();
@@ -61,18 +42,12 @@ export async function createPost(formData: FormData) {
   }
 
   await db.post.create({ data: { body: parsed.data.body, userId: user.id } });
-  updateTag('feed');
+  refresh();
   return { ok: true as const };
 }
 ```
 
-The `cacheTag` in the query and the `updateTag` in the action live in the same feature folder. This is the full cycle: **tag, cache, invalidate**.
-
-### `updateTag` vs `revalidateTag` vs `refresh`
-
-- [`updateTag(tag)`](https://nextjs.org/docs/app/api-reference/functions/update-tag) inside server actions — the read-your-own-writes path.
-- [`revalidateTag(tag)`](https://nextjs.org/docs/app/api-reference/functions/revalidateTag) inside route handlers (webhooks, cron) — stale-while-revalidate.
-- [`refresh()`](https://nextjs.org/docs/app/api-reference/functions/refresh) when there's no `cacheTag` to invalidate (Cache Components off, or the data is uncached).
+[`refresh()`](https://nextjs.org/docs/app/api-reference/functions/refresh) re-renders the current route for the current user. With Cache Components, you'd swap this for `updateTag('feed')` to invalidate everything tagged `feed` and get read-your-own-writes across users — see `references/cache-components.md`.
 
 ### Action file naming
 

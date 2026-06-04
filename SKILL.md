@@ -13,14 +13,25 @@ Use when building or refactoring Next.js 16+ App Router apps. The skill is organ
 
 ## When to read which reference
 
-| Task                                                                      | Read                             |
-| ------------------------------------------------------------------------- | -------------------------------- |
-| Creating a new feature, deciding folder structure, naming files           | `references/feature-folders.md`  |
-| Writing a query or server action, invalidating cached data                | `references/queries-actions.md`  |
-| Building a server/client component, designing a skeleton, using `use()`   | `references/components.md`       |
-| Composing a page, placing `<Suspense>`, preventing CLS                    | `references/pages-suspense.md`   |
-| Turning on `cacheComponents`, adding `'use cache'`, static shell          | `references/cache-components.md` |
-| Toasts, pending state, destructive flows, action-prop pattern, pagination | `references/ux-patterns.md`      |
+The references are split into two zones. Load only what the task calls for.
+
+### Core (load for any RSC Next.js app)
+
+| Task                                                                    | Read                            |
+| ----------------------------------------------------------------------- | ------------------------------- |
+| Creating a new feature, deciding folder structure, naming files         | `references/feature-folders.md` |
+| Writing a query or server action, invalidating cached data              | `references/queries-actions.md` |
+| Building a server/client component, designing a skeleton, using `use()` | `references/components.md`      |
+| Composing a page, placing `<Suspense>`, preventing CLS                  | `references/pages-suspense.md`  |
+
+### Instant Apps (load only when optimizing for instant-feeling apps)
+
+These build on the core; they're opt-in opinions, not architecture requirements.
+
+| Task                                                                                  | Read                             |
+| ------------------------------------------------------------------------------------- | -------------------------------- |
+| Turning on `cacheComponents`, adding `'use cache'` / `cacheTag` / `updateTag`         | `references/cache-components.md` |
+| `useOptimistic` for mutations, toasts, pending state, action-prop pattern, pagination | `references/ux-patterns.md`      |
 
 Read references **in addition to**, not instead of, this overview. Each one assumes the rules below already apply.
 
@@ -37,14 +48,13 @@ Next.js 16+ App Router with React Server Components. Three high-level patterns s
 These rules apply to every change. If you violate one, you'll fight the framework later.
 
 - **Pages never fetch data directly.** They compose feature components.
-- **Pages stay synchronous.** Use `params.then()` instead of `await params` so page chrome paints into the static shell. See `references/pages-suspense.md`.
+- **Pages stay synchronous.** Use `params.then()` instead of `await params` so the page chrome above the `.then()` paints immediately and only the data-dependent section suspends. (Required for the static shell when Cache Components is on; still a nice-to-have without it.) See `references/pages-suspense.md`.
 - **Queries live in `<domain>-queries.ts`** with `import 'server-only'` and `cache()` wrapping every export. See `references/queries-actions.md`.
 - **Actions live in `<domain>-actions.ts`** with `'use server'` at the top. The file name matches the folder, even when the mutation targets a sub-concept. See `references/feature-folders.md` and `references/queries-actions.md`.
 - **Async server component is the default.** Add `'use client'` only when you need hooks, event handlers, or browser APIs. See `references/components.md`.
 - **The page owns the Suspense boundary; the feature owns the skeleton.** Don't pre-wrap components in `<Suspense>` inside the feature. See `references/pages-suspense.md`.
 - **Skeletons live in the same file as the component.** `Feed` and `FeedSkeleton` are sibling exports. See `references/components.md`.
 - **Single-use sub-components stay inlined as non-exported functions** in the same file. Exports are for things other files import. See `references/components.md`.
-- **Cache Components is opt-in.** If `cacheComponents: true` is set, every async operation must be inside `<Suspense>` or marked `'use cache'`. See `references/cache-components.md`.
 
 ## Decision flow for a new feature
 
@@ -57,12 +67,12 @@ These rules apply to every change. If you violate one, you'll fight the framewor
 
 2. Add the query
    → features/<domain>/<domain>-queries.ts
-   → Wrap in cache(), add 'use cache' + cacheTag if using Cache Components.
-   → See references/queries-actions.md.
+   → Wrap in cache(). If using Cache Components, also add 'use cache' + cacheTag.
+   → See references/queries-actions.md (core) and references/cache-components.md (Cache Components).
 
 3. Add the action (if there's a mutation)
    → features/<domain>/<domain>-actions.ts
-   → 'use server' at the top, validate input, updateTag() to invalidate.
+   → 'use server' at the top, validate input, refresh() (or updateTag() with Cache Components) to invalidate.
 
 4. Build the component
    → features/<domain>/components/<name>.tsx
@@ -87,9 +97,14 @@ These rules apply to every change. If you violate one, you'll fight the framewor
 
 ## Reference index
 
+### Core
+
 - **`references/feature-folders.md`** — Folder layout, naming, merging sub-concepts, when a new folder is justified, action/query file naming.
-- **`references/queries-actions.md`** — Server-only queries, `cache()` for dedup, `'use cache'` + `cacheTag` + `cacheLife`, server actions, `updateTag()` / `revalidateTag()` / `refresh()`.
+- **`references/queries-actions.md`** — Server-only queries, `cache()` for dedup, server actions, validation, `refresh()` for invalidation.
 - **`references/components.md`** — Async server components, skeletons, client boundary, promise + `use()` pattern, single-use helpers, polling for live data.
-- **`references/pages-suspense.md`** — Page composition, `params.then()`, Suspense placement rules, CLS prevention, error boundaries, layout-level Suspense.
-- **`references/cache-components.md`** — `cacheComponents: true` model, the static shell, build constraints, `'use cache'` on components vs queries.
-- **`references/ux-patterns.md`** — Toasts, pending state via `data-pending`, destructive action flows, the action-prop pattern, URL pagination, escape hatches for `usePathname`/`useSearchParams`, `useFormStatus`.
+- **`references/pages-suspense.md`** — Page composition, `PageProps` / `LayoutProps`, `params.then()`, Suspense placement rules, CLS prevention, error boundaries, layout-level Suspense.
+
+### Instant Apps (opt-in)
+
+- **`references/cache-components.md`** — `cacheComponents: true` model, the static shell, `'use cache'` / `'use cache: private'` / `'use cache: remote'`, `cacheTag` / `cacheLife` strategy, `updateTag` / `revalidateTag` invalidation, `connection()` escape hatch, build constraints.
+- **`references/ux-patterns.md`** — `useOptimistic` for mutations, toasts, pending state via `data-pending`, destructive action flows, the action-prop pattern, URL pagination, `useFormStatus`.

@@ -86,6 +86,37 @@ export function DeletePostDialog({ postId }: { postId: string }) {
 
 If view transitions are enabled, wrapping the server action call in `startTransition` will animate the background UI behind the dialog. Use `useState` for the action's pending state and reserve `startTransition` for the post-success navigation only.
 
+## `useOptimistic` for instant feedback
+
+For mutations that are unlikely to fail (favorite, vote, follow), use [`useOptimistic`](https://react.dev/reference/react/useOptimistic) so the UI updates immediately and rolls back if the action throws:
+
+```tsx
+'use client';
+import { useOptimistic, useTransition } from 'react';
+
+export function FavoriteButton({ slug, favorited }: { slug: string; favorited: boolean }) {
+  const [optimisticFavorited, setOptimisticFavorited] = useOptimistic(favorited);
+  const [, startTransition] = useTransition();
+
+  function handleClick() {
+    startTransition(async () => {
+      setOptimisticFavorited(!favorited);
+      await toggleFavorite(slug);
+    });
+  }
+
+  return <button onClick={handleClick}>{optimisticFavorited ? '★' : '☆'}</button>;
+}
+```
+
+Key rules (the rest is in the React docs):
+
+- Call `setOptimistic` inside a [transition](https://react.dev/reference/react/useTransition), not as a free update.
+- Inside `<form action={…}>`, React opens the transition for you — call `setOptimistic` directly in the action body.
+- For counter-style updates, pass a reducer as the second argument so the next value is derived from the current one (vote counts, like counts).
+
+For the deeper picture (coordinating `useTransition`, `useOptimistic`, `useActionState`, Suspense streaming, and caching across server and client), see the [Interactive Apps guide PR](https://github.com/vercel/next.js/pull/94020) — not merged yet, but the canonical reference until it lands at `nextjs.org/docs/app/guides/interactive-apps`.
+
 ## Pending state without `useOptimistic`
 
 For interactions where optimistic UI doesn't fit (filters, sort changes, navigation), use `useTransition` and surface pending state with `data-pending`:
