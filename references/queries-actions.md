@@ -112,9 +112,7 @@ For one-off buttons, `onClick={() => action(args)}` is fine. Wrap in [`startTran
 Return a discriminated union from actions that can fail:
 
 ```tsx
-export type ActionResult<T = void> =
-  | { ok: true; data: T }
-  | { ok: false; error: string };
+export type ActionResult<T = void> = { ok: true; data: T } | { ok: false; error: string };
 ```
 
 Toast on `ok: false` from the client. Skip success toasts when an optimistic UI already shows the result.

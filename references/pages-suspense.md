@@ -15,8 +15,12 @@ Pages in `app/` import feature components and place `<Suspense>` boundaries. The
 Type page and layout functions with the generated `PageProps<'/route'>` and `LayoutProps<'/route'>` helpers — they're emitted by [`typedRoutes`](https://nextjs.org/docs/app/api-reference/config/next-config-js/typedRoutes) and give you the correct `params` / `searchParams` / `children` shape for that exact route.
 
 ```tsx
-export default function PostPage({ params }: PageProps<'/post/[id]'>) { /* ... */ }
-export default function PostLayout({ children, params }: LayoutProps<'/post/[id]'>) { /* ... */ }
+export default function PostPage({ params }: PageProps<'/post/[id]'>) {
+  /* ... */
+}
+export default function PostLayout({ children, params }: LayoutProps<'/post/[id]'>) {
+  /* ... */
+}
 ```
 
 Don't hand-write `{ params: Promise<{ id: string }> }` — the generated types stay in sync with the route, including catch-all and optional segments. Route handlers have their own `RouteContext<'/api/...'>`. Turn on `typedRoutes: true` in `next.config.ts`.
@@ -207,7 +211,7 @@ import ErrorBoundary from '@/components/ui/error-boundary';
   <Suspense fallback={<RepliesSkeleton />}>
     <Replies postId={id} />
   </Suspense>
-</ErrorBoundary>
+</ErrorBoundary>;
 ```
 
 Why not plain `react-error-boundary`? It catches Next's framework throws (so `notFound()` never reaches `not-found.tsx`), and `resetErrorBoundary` doesn't re-fetch server data. For background, see [Error Handling in Next.js with catchError](https://aurorascharff.no/posts/error-handling-in-nextjs-with-catch-error/).

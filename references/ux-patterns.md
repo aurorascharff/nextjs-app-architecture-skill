@@ -125,9 +125,7 @@ Or with Tailwind:
 ```html
 <div className="group">
   <LabelFilter />
-  <div className="group-has-data-pending:opacity-50">
-    {/* content that fades while filter is pending */}
-  </div>
+  <div className="group-has-data-pending:opacity-50">{/* content that fades while filter is pending */}</div>
 </div>
 ```
 
