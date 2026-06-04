@@ -303,4 +303,4 @@ This is the cleanest way to handle "disable + spinner" on submit without lifting
 
 ## Error states in components
 
-When a query throws, `error.tsx` at the route segment catches it. Wrap sub-sections that may fail independently in `<ErrorBoundary>`. For `notFound()` use `not-found.tsx`. See `references/pages-suspense.md` for placement.
+When a query throws, `error.tsx` at the route segment catches it. Wrap sub-sections that may fail independently in an error boundary built on `unstable_catchError` from `next/error`. For `notFound()` use `not-found.tsx`. See `references/pages-suspense.md` for the boundary primitive and placement.
