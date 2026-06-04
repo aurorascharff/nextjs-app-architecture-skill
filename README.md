@@ -40,7 +40,6 @@ npx skills install https://github.com/aurorascharff/nextjs-app-architecture-skil
 
 ## Further reading
 
-- [Component Architecture for React Server Components](https://aurorascharff.no/posts/component-architecture-for-react-server-components/)
 - [Server and Client Component Composition in Practice](https://aurorascharff.no/posts/server-client-component-composition-in-practice/)
 - [Building Design Components with Action Props using Async React](https://aurorascharff.no/posts/building-design-components-with-action-props-using-async-react/)
 - [Error Handling in Next.js with catchError](https://aurorascharff.no/posts/error-handling-in-nextjs-with-catch-error/)
