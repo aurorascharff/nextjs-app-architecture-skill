@@ -201,30 +201,7 @@ This caches the rendered HTML, not just the query result. Useful for components 
 
 ## Live data via polling
 
-If the feature needs to reflect server-side updates without user action (other users posting, new notifications, vote counts changing), drop a `<Poller>` client component into the page:
-
-```tsx
-'use client';
-
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-
-export function Poller({ intervalMs = 5000 }: { intervalMs?: number }) {
-  const router = useRouter();
-  useEffect(() => {
-    const interval = setInterval(() => router.refresh(), intervalMs);
-    const onFocus = () => router.refresh();
-    window.addEventListener('focus', onFocus);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', onFocus);
-    };
-  }, [router, intervalMs]);
-  return null;
-}
-```
-
-`router.refresh()` re-renders the server components on the server. Combined with `'use cache'` + `cacheLife('seconds')`, the queries return cached data until they expire, then the next refresh picks up new data. No WebSockets, no SSE — just the existing cache cycle.
+For features that reflect server-side updates without user action (other users posting, new notifications, vote counts changing), drop a `<Poller>` client component into the page that calls [`router.refresh()`](https://nextjs.org/docs/app/api-reference/functions/use-router) on an interval. Combined with `'use cache'` + `cacheLife('seconds')`, queries return cached data until they expire, then the next refresh picks up new data. No WebSockets, no SSE — just the existing cache cycle.
 
 ## `useOptimistic` for mutations
 

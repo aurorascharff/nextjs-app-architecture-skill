@@ -77,7 +77,7 @@ These rules apply to every change. If you violate one, you'll fight the framewor
 
 ## Pitfalls
 
-- **Passing server actions as props to call them.** Client components import actions directly. The exception is parameter-bound actions: `onAction={deletePost.bind(null, post.id)}`.
+- **Passing server actions as props to call them.** Client components import actions directly.
 - **Refetching what the parent already has.** Server components take plain values, not promises. If `<Feed>` queried the list, pass each `post` to `<Post post={post} />`, don't refetch by id.
 - **Inlining route-specific components in the page file.** Extract them into the feature folder. The page should not grow past composition.
 - **Splitting a card and its grid into separate files.** They're always used together. One file, multiple exports.
