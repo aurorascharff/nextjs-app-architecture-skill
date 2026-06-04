@@ -91,12 +91,11 @@ features/             # Domain folders
 components/           # UI primitives, theme, and app-shell singletons
 types/                # Domain types (optional — co-located is also fine)
 lib/                  # Utility functions
-prisma/               # Schema and seed data (or equivalent)
 ```
 
 `components/` holds:
 
-- **`components/ui/`** — primitives. shadcn/ui pieces, small reusable building blocks, action-prop components.
+- **`components/ui/`** — primitives. Low-level building blocks and action-prop components.
 - **`components/theme/`** — theme provider and toggle, paired.
 - **Top-level files** (`site-header.tsx`, `auth-gate.tsx`, `poller.tsx`) — app-shell singletons used once each. No `common/` folder — "common" is not a category. If a component is used everywhere it's a primitive (→ `ui/`); if it's used once it lives at the top level.
 
