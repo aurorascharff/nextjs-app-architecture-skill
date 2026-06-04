@@ -222,9 +222,7 @@ export function FavoriteButton({ slug, favorited }: { slug: string; favorited: b
     });
   }
 
-  return (
-    <button onClick={handleClick}>{optimisticFavorited ? '★' : '☆'}</button>
-  );
+  return <button onClick={handleClick}>{optimisticFavorited ? '★' : '☆'}</button>;
 }
 ```
 

@@ -122,12 +122,10 @@ Style ancestors with CSS that responds to a descendant's `data-pending`:
 
 Or with Tailwind:
 
-```html
+```tsx
 <div className="group">
   <LabelFilter />
-  <div className="group-has-data-pending:opacity-50">
-    {/* content that fades while filter is pending */}
-  </div>
+  <div className="group-has-data-pending:opacity-50">{/* content that fades while filter is pending */}</div>
 </div>
 ```
 
