@@ -4,7 +4,7 @@ The data layer. Every feature has both: queries to read, actions to write.
 
 ## Queries
 
-Create `features/<domain>/<domain>-queries.ts`. Mark it `import 'server-only'`. Wrap every export in `cache()` from React for **request-level deduplication**.
+Create `features/<domain>/<domain>-queries.ts`. Mark it `import 'server-only'`. Wrap every export in [`cache()`](https://react.dev/reference/react/cache) from React for **request-level deduplication** — same query called from multiple components in the same render hits the database once.
 
 ```ts
 import 'server-only';
@@ -15,11 +15,9 @@ export const getFeed = cache(async (userId: string) => {
 });
 ```
 
-Without `cache()`, the same query called from multiple components in the same render hits the database multiple times.
-
 ### With Cache Components
 
-If `cacheComponents: true` is enabled, add `'use cache'` + `cacheTag` + `cacheLife` to mark the query as cacheable across requests:
+If [`cacheComponents: true`](https://nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents) is enabled, add [`'use cache'`](https://nextjs.org/docs/app/api-reference/directives/use-cache) plus [`cacheTag`](https://nextjs.org/docs/app/api-reference/functions/cache-tag) and [`cacheLife`](https://nextjs.org/docs/app/api-reference/functions/cache-life) to make the query cacheable across requests:
 
 ```ts
 import 'server-only';
@@ -34,15 +32,11 @@ export const getFeed = cache(async (userId: string) => {
 });
 ```
 
-- `cacheTag` lets you invalidate the cache by tag from a mutation. Use both a global tag (`'feed'`) and a scoped one (`` `feed-${userId}` ``) so you can invalidate at either granularity.
-- `cacheLife` sets the staleness profile. `'seconds'`, `'minutes'`, `'hours'`, or a custom profile.
-- `'use cache: private'` scopes the cache per user when the query reads cookies or session data.
-
-See `references/cache-components.md` for the full Cache Components model.
+The opinionated bit: tag at **two granularities** — a global tag (`'feed'`) and a scoped tag (`` `feed-${userId}` ``) — so the matching action can invalidate at either. See `references/cache-components.md` for the full model, `private` / `remote` variants, and the `connection()` escape hatch.
 
 ### Without Cache Components
 
-If `cacheComponents` is not enabled, skip `'use cache'`. Keep `cache()` for request-level dedup. Invalidate via `refresh()` from actions instead of `updateTag()`.
+If `cacheComponents` is not enabled, skip `'use cache'`. Keep `cache()` for request-level dedup. Invalidate via [`refresh()`](https://nextjs.org/docs/app/api-reference/functions/refresh) from actions instead of [`updateTag()`](https://nextjs.org/docs/app/api-reference/functions/update-tag).
 
 ## Actions
 
@@ -76,9 +70,9 @@ The `cacheTag` in the query and the `updateTag` in the action live in the same f
 
 ### `updateTag` vs `revalidateTag` vs `refresh`
 
-- **`updateTag(tag)`** — invalidates immediately and re-renders for read-your-own-writes. Use inside server actions when the user expects to see the result.
-- **`revalidateTag(tag)`** — stale-while-revalidate. Use in route handlers (webhooks, cron) where you don't need an immediate UI update.
-- **`refresh()`** — re-renders the current route for the current user. Use when there's no `cacheTag` to invalidate (e.g. Cache Components is off, or the data is uncached).
+- [`updateTag(tag)`](https://nextjs.org/docs/app/api-reference/functions/update-tag) inside server actions — the read-your-own-writes path.
+- [`revalidateTag(tag)`](https://nextjs.org/docs/app/api-reference/functions/revalidateTag) inside route handlers (webhooks, cron) — stale-while-revalidate.
+- [`refresh()`](https://nextjs.org/docs/app/api-reference/functions/refresh) when there's no `cacheTag` to invalidate (Cache Components off, or the data is uncached).
 
 ### Action file naming
 
@@ -119,9 +113,9 @@ Design components (`<BottomNav>`, `<ToggleGroup>`, `<SubmitButton>`) take this f
 
 ## Form actions vs onClick handlers
 
-For mutations from a form, prefer `<form action={serverAction}>`. React wraps the call in a transition automatically and handles pending state.
+Prefer [`<form action={serverAction}>`](https://react.dev/reference/react-dom/components/form#action) for form mutations — React wraps the call in a transition and surfaces pending state automatically.
 
-For one-off buttons, `onClick={() => action(args)}` is fine. Wrap in `startTransition` if you need pending state.
+For one-off buttons, `onClick={() => action(args)}` is fine. Wrap in [`startTransition`](https://react.dev/reference/react/startTransition) if you need pending state.
 
 ## Return shape
 

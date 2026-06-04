@@ -207,26 +207,13 @@ export async function Feed({ page = 1 }: { page?: number }) {
 }
 ```
 
-The "Load more" button does a soft scroll-preserving navigation:
-
-```tsx
-<Link
-  href={`/?page=${page + 1}`}
-  scroll={false}
-  // or imperatively:
-  // onClick={() => startTransition(() => router.push(`/?page=${page + 1}`, { scroll: false }))}
-/>
-```
-
-Each page is a separate request; the cache layer handles the dedup.
+The "Load more" button uses [`<Link scroll={false}>`](https://nextjs.org/docs/app/api-reference/components/link) (or `router.push(url, { scroll: false })` inside `startTransition`). Each page is a separate request; the cache layer handles dedup.
 
 ## Active navigation links without Suspense
 
-`usePathname()` from `next/navigation` requires a Suspense boundary above it. For a top-level navigation that paints in the static shell, the boundary cost outweighs the benefit.
+[`usePathname()`](https://nextjs.org/docs/app/api-reference/functions/use-pathname) and [`useSearchParams()`](https://nextjs.org/docs/app/api-reference/functions/use-search-params) from `next/navigation` require a Suspense boundary above them. For top-of-tree UI that paints in the static shell, the boundary cost outweighs the benefit.
 
-Workaround: read the pathname via `useSyncExternalStore` over `window.location.pathname` instead, and seed the initial render with an inline pre-paint script that sets a `data-navlink-active` attribute. The hook subscribes to `popstate` and pushState changes for client-side updates.
-
-Same trick works for `useSearchParams()` — replace it with a hook that reads `window.location.search` via `useSyncExternalStore` plus a pre-paint script that seeds form values from the URL.
+Workaround: read the URL via [`useSyncExternalStore`](https://react.dev/reference/react/useSyncExternalStore) over `window.location` and seed initial render with an inline pre-paint script that sets `data-navlink-active` / form `value` attributes before paint. The hook subscribes to `popstate` and pushState for client-side updates.
 
 This is an escape hatch. Use it only when:
 
@@ -238,7 +225,7 @@ For data fetching that depends on `searchParams`, read it server-side in the pag
 
 ## Global client state
 
-If the app has truly global client state (audio player, shopping cart, theme that needs to react to system changes), wrap a provider at the root:
+If the app has truly global client state (audio player, shopping cart, theme that needs to react to system changes), wrap a [provider](https://react.dev/reference/react/createContext#provider) with [`useReducer`](https://react.dev/reference/react/useReducer) at the root:
 
 ```tsx
 // providers.tsx
@@ -277,7 +264,7 @@ When rendering a vertical list of interactive rows with hover backgrounds, add a
 
 ## Form pending state from `useFormStatus`
 
-For inline pending UI on form submits, `useFormStatus` reads the pending state of the **nearest parent form**. It must be called from a component rendered inside `<form>`, not from the form component itself.
+[`useFormStatus`](https://react.dev/reference/react-dom/hooks/useFormStatus) reads the pending state of the **nearest parent form**. It must be called from a component rendered inside `<form>`, not from the form component itself.
 
 ```tsx
 'use client';

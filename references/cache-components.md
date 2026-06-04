@@ -94,7 +94,7 @@ export const getRepo = cache(async (owner: string, name: string) => {
 
 ### Opting back into dynamic with `connection()`
 
-If you need a single query to always run per request (no caching), call `connection()` from `next/server` first. This is the escape hatch for inherently dynamic data inside an app that's otherwise on Cache Components:
+For a single query that must always run per request, call [`connection()`](https://nextjs.org/docs/app/api-reference/functions/connection) from `next/server` first. The surrounding render becomes dynamic, so the calling component must sit inside a `<Suspense>` boundary:
 
 ```ts
 import 'server-only';
@@ -108,7 +108,7 @@ export const getUserFavorites = cache(async (userName: string) => {
 });
 ```
 
-`connection()` marks the surrounding render as dynamic, so the calling component must sit inside a `<Suspense>` boundary. Use it when the data is genuinely per-request and per-user (favorites, draft state, real-time counts) and you don't want to use `'use cache: private'`.
+Use it when the data is genuinely per-request and per-user (favorites, draft state, real-time counts) and `'use cache: private'` isn't a fit.
 
 ## `'use cache'` on components
 

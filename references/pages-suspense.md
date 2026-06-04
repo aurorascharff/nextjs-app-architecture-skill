@@ -55,7 +55,7 @@ export default function ProfilePage({ params, searchParams }: PageProps<'/u/[han
 
 ### `generateMetadata` can await directly
 
-`generateMetadata` runs before the page renders, so `await params` is fine there:
+[`generateMetadata`](https://nextjs.org/docs/app/api-reference/functions/generate-metadata) runs before the page renders, so `await params` is fine there:
 
 ```tsx
 export async function generateMetadata({ params }: PageProps<'/post/[id]'>): Promise<Metadata> {
@@ -67,7 +67,7 @@ export async function generateMetadata({ params }: PageProps<'/post/[id]'>): Pro
 
 ### `generateStaticParams` for dynamic routes
 
-For `[slug]`-style routes, export `generateStaticParams` from the page or layout to pre-build a known set of pages. Combined with `cacheComponents` and `'use cache'` on the queries, every listed slug ends up in the static shell:
+For `[slug]`-style routes, export [`generateStaticParams`](https://nextjs.org/docs/app/api-reference/functions/generate-static-params) from the page or layout to pre-build a known set of pages. Combined with `cacheComponents` and `'use cache'` on the queries, every listed slug ends up in the static shell:
 
 ```tsx
 import { getEvents } from '@/features/event/event-queries';
@@ -78,11 +78,11 @@ export async function generateStaticParams() {
 }
 ```
 
-`generateStaticParams` does **not** change the page function signature. `params` is still a Promise; the page still uses `params.then(...)`. The pre-build only affects which slugs prerender at build time.
+The gotcha: `generateStaticParams` does **not** change the page function signature. `params` is still a Promise; the page still uses `params.then(...)`. The pre-build only affects which slugs prerender at build time.
 
 ### `notFound()` from queries
 
-When a query can't find the resource, call `notFound()`:
+When a query can't find the resource, call [`notFound()`](https://nextjs.org/docs/app/api-reference/functions/not-found):
 
 ```ts
 import { notFound } from 'next/navigation';
@@ -94,7 +94,7 @@ export const getEventBySlug = cache(async (slug: string) => {
 });
 ```
 
-It throws a control-flow error that bubbles to `not-found.tsx` at the nearest segment. Don't wrap this in a try/catch — let it propagate. Use `unstable_rethrow` from `next/navigation` if you need a real try/catch around it.
+It bubbles to the nearest [`not-found.tsx`](https://nextjs.org/docs/app/api-reference/file-conventions/not-found). Don't wrap it in a try/catch — use [`unstable_rethrow`](https://nextjs.org/docs/app/api-reference/functions/unstable_rethrow) from `next/navigation` if you need to.
 
 ## The page owns the Suspense boundary
 
@@ -201,7 +201,7 @@ import ErrorBoundary from '@/components/ui/error-boundary';
 
 Why not plain `react-error-boundary`? It catches Next's framework throws (so `notFound()` never reaches `not-found.tsx`), and `resetErrorBoundary` doesn't re-fetch server data. For background, see [Error Handling in Next.js with catchError](https://aurorascharff.no/posts/error-handling-in-nextjs-with-catch-error/).
 
-Pair component-level boundaries with `error.tsx` at the route segment for unrecoverable errors. `error.tsx` also receives an `unstable_retry` callback you can wire to a button.
+Pair component-level boundaries with [`error.tsx`](https://nextjs.org/docs/app/api-reference/file-conventions/error) at the route segment for unrecoverable errors. `error.tsx` also receives an `unstable_retry` callback you can wire to a button.
 
 ## Layout-level Suspense
 

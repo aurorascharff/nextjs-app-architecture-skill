@@ -4,7 +4,7 @@ How to build server and client components inside a feature folder.
 
 ## Default: async server component
 
-Server components await their own queries directly. No `useEffect`, no client-side fetching, no loading state to manage.
+Server components await their own queries directly — no `useEffect`, no client-side fetching, no manual loading state. See the [Server Components docs](https://nextjs.org/docs/app/getting-started/server-and-client-components) for the model.
 
 ```tsx
 // features/notifications/components/notifications-badge.tsx
@@ -155,7 +155,7 @@ async function Post({ id }: { id: string }) {
 
 ## Client components that own their loading state
 
-When a client component needs server data but should manage its own loading (a sidebar badge, a popover that opens on hover), pass an **unresolved promise** from the server and resolve it with `use()` on the client. Wrap the consumer in `<Suspense>`.
+When a client component needs server data but should manage its own loading (a sidebar badge, a popover that opens on hover), pass an **unresolved promise** from the server and resolve it with [`use()`](https://react.dev/reference/react/use) on the client. Wrap the consumer in `<Suspense>`.
 
 ```tsx
 // Server side — don't await the query
@@ -165,7 +165,7 @@ When a client component needs server data but should manage its own loading (a s
 ```
 
 ```tsx
-// 'use client'
+'use client';
 import { use } from 'react';
 
 export function TagPicker({ itemsPromise }: { itemsPromise: Promise<Tag[]> }) {
@@ -174,7 +174,7 @@ export function TagPicker({ itemsPromise }: { itemsPromise: Promise<Tag[]> }) {
 }
 ```
 
-Name promise props with a `Promise` suffix (`itemsPromise`, `userPromise`) so the contract is obvious at the call site.
+The opinionated bit: name promise props with a `Promise` suffix (`itemsPromise`, `userPromise`) so the contract is obvious at the call site.
 
 ## Caching a whole component
 
@@ -228,7 +228,7 @@ export function Poller({ intervalMs = 5000 }: { intervalMs?: number }) {
 
 ## `useOptimistic` for mutations
 
-For instant feedback on mutations that are unlikely to fail (favorite, vote, follow):
+For instant feedback on mutations that are unlikely to fail (favorite, vote, follow), use [`useOptimistic`](https://react.dev/reference/react/useOptimistic):
 
 ```tsx
 'use client';
@@ -251,36 +251,11 @@ export function FavoriteButton({ slug, favorited }: { slug: string; favorited: b
 }
 ```
 
-`useOptimistic` returns `[currentValue, setOptimistic]`. Call `setOptimistic(nextValue)` inside a transition — React keeps the optimistic value visible until the transition resolves, then snaps back to the latest server state (`favorited`).
+Key rules (the rest is in the React docs):
 
-For a form submission, prefer the built-in `<form action>` — React wraps the call in a transition automatically:
-
-```tsx
-<form
-  action={async () => {
-    setOptimisticFavorited(!favorited);
-    await toggleFavorite(slug);
-  }}
->
-  <button type="submit">{optimisticFavorited ? '★' : '☆'}</button>
-</form>
-```
-
-If you need to compute the next optimistic value from the current one (e.g. incrementing a counter), pass a reducer as the second argument:
-
-```tsx
-const [optimisticVotes, addUpvote] = useOptimistic(
-  { votes, hasVoted },
-  (state, _: void) => (state.hasVoted ? state : { votes: state.votes + 1, hasVoted: true }),
-);
-// ...
-startTransition(async () => {
-  addUpvote();
-  await upvoteQuestion(id);
-});
-```
-
-`useOptimistic` rolls back automatically if the transition throws.
+- Call `setOptimistic` inside a [transition](https://react.dev/reference/react/useTransition), not as a free update.
+- Inside `<form action={…}>`, React opens the transition for you — you can call `setOptimistic` directly in the action body.
+- For counter-style updates, pass a reducer as the second argument so the next value is derived from the current one (vote counts, like counts).
 
 For non-optimistic pending UI (filters, sort changes, deferred work), use `useTransition` with the `data-pending` pattern in `references/ux-patterns.md`. For success/error feedback rules, see the same reference.
 
