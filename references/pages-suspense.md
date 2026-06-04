@@ -10,6 +10,17 @@ Pages in `app/` import feature components and place `<Suspense>` boundaries. The
 - Define new components except wrappers (e.g. `<NavForward>`)
 - Inline route-specific UI (extract it into the feature folder)
 
+## Page function signatures
+
+Type page and layout functions with the generated `PageProps<'/route'>` and `LayoutProps<'/route'>` helpers — they're emitted by [`typedRoutes`](https://nextjs.org/docs/app/api-reference/config/next-config-js/typedRoutes) and give you the correct `params` / `searchParams` / `children` shape for that exact route.
+
+```tsx
+export default function PostPage({ params }: PageProps<'/post/[id]'>) { /* ... */ }
+export default function PostLayout({ children, params }: LayoutProps<'/post/[id]'>) { /* ... */ }
+```
+
+Don't hand-write `{ params: Promise<{ id: string }> }` — the generated types stay in sync with the route, including catch-all and optional segments. Route handlers have their own `RouteContext<'/api/...'>`. Turn on `typedRoutes: true` in `next.config.ts`.
+
 ## Keep pages synchronous
 
 Use `params.then()` instead of `await params`. Content above the `.then()` pre-renders into the static shell; content inside it suspends.
