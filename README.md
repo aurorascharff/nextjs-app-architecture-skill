@@ -39,4 +39,4 @@ npx skills install https://github.com/aurorascharff/nextjs-app-architecture-skil
 - [`cacheComponents` config](https://nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents)
 - [`'use cache'` directive](https://nextjs.org/docs/app/api-reference/directives/use-cache)
 - [`updateTag`](https://nextjs.org/docs/app/api-reference/functions/update-tag), [`cacheTag`](https://nextjs.org/docs/app/api-reference/functions/cache-tag), [`cacheLife`](https://nextjs.org/docs/app/api-reference/functions/cache-life)
-- [Interactive Apps guide](https://nextjs.org/docs/app/guides/interactive-apps)
+- [Interactive Apps guide (PR)](https://github.com/vercel/next.js/pull/94020) — covers `useTransition`, `useOptimistic`, `useActionState`, `data-pending`, Suspense streaming, and caching across server and client. The guide is not merged yet; the PR is the canonical reference until it lands at `nextjs.org/docs/app/guides/interactive-apps`.

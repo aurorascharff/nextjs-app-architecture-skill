@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "organization": "Aurora Scharff",
   "date": "June 2026",
   "abstract": "Architecture patterns for Next.js 16 App Router apps with feature-sliced design, Suspense streaming, and optional Cache Components. Covers feature folder layout, server-only queries, server actions, async server components, the client boundary, and page composition with params.then() for static-shell preservation. References cover each topic in depth so the agent only loads what's needed for the task.",
@@ -10,6 +10,6 @@
     "https://nextjs.org/docs/app/api-reference/functions/cache-tag",
     "https://nextjs.org/docs/app/api-reference/functions/cache-life",
     "https://nextjs.org/docs/app/api-reference/functions/update-tag",
-    "https://nextjs.org/docs/app/guides/interactive-apps"
+    "https://github.com/vercel/next.js/pull/94020"
   ]
 }

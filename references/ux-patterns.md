@@ -4,11 +4,11 @@ UX patterns that work alongside the architecture in the rest of this skill. Thes
 
 ## Feedback via toasts
 
-Use `sonner` (or equivalent) for user-facing feedback from mutations.
+Wire your toast library through a single import so the call sites stay clean. Use it for user-facing feedback from mutations.
 
 ```tsx
 'use client';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { createPost } from '@/features/post/post-actions';
 
 async function submitAction(formData: FormData) {
@@ -40,7 +40,7 @@ If the app uses view transitions, portaled/floating elements flicker during rout
 <Dialog style={{ viewTransitionName: 'none' }}>...</Dialog>
 ```
 
-Ariakit, Radix, Headless UI all render portaled content that needs this treatment. shadcn/ui dialogs typically accept a `style` prop on the content element.
+Any UI library that renders portaled content needs this treatment. The fix is the same regardless of which library: pass an inline style with `viewTransitionName: 'none'` on the portal's root element.
 
 For more on view transitions, see the [React View Transitions skill](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-view-transitions).
 
@@ -52,7 +52,7 @@ For delete / leave / unsubscribe flows:
 'use client';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { deletePost } from '@/features/post/post-actions';
 
 export function DeletePostDialog({ postId }: { postId: string }) {
@@ -303,4 +303,4 @@ This is the cleanest way to handle "disable + spinner" on submit without lifting
 
 ## Error states in components
 
-When a query throws, `error.tsx` at the route segment catches it. Wrap sub-sections that may fail independently in `<ErrorBoundary>`. For `notFound()` use `not-found.tsx`. See `references/pages-suspense.md` for placement.
+When a query throws, `error.tsx` at the route segment catches it. Wrap sub-sections that may fail independently in an error boundary built on `unstable_catchError` from `next/error`. For `notFound()` use `not-found.tsx`. See `references/pages-suspense.md` for the boundary primitive and placement.

@@ -79,6 +79,37 @@ export const getNotifications = cache(async () => {
 });
 ```
 
+### `'use cache: remote'`
+
+For data fetched from a remote service (third-party API, public endpoint) that's safe to cache across users and durable beyond the local edge, use `'use cache: remote'`. Useful for protecting yourself against rate-limited APIs (GitHub, payment providers, geocoders).
+
+```ts
+export const getRepo = cache(async (owner: string, name: string) => {
+  'use cache: remote';
+  cacheTag(`repo-${owner}-${name}`);
+  cacheLife('hours');
+  return fetch(`https://api.github.com/repos/${owner}/${name}`).then(r => r.json());
+});
+```
+
+### Opting back into dynamic with `connection()`
+
+If you need a single query to always run per request (no caching), call `connection()` from `next/server` first. This is the escape hatch for inherently dynamic data inside an app that's otherwise on Cache Components:
+
+```ts
+import 'server-only';
+
+import { connection } from 'next/server';
+import { cache } from 'react';
+
+export const getUserFavorites = cache(async (userName: string) => {
+  await connection();
+  return db.favorite.findMany({ where: { userName } });
+});
+```
+
+`connection()` marks the surrounding render as dynamic, so the calling component must sit inside a `<Suspense>` boundary. Use it when the data is genuinely per-request and per-user (favorites, draft state, real-time counts) and you don't want to use `'use cache: private'`.
+
 ## `'use cache'` on components
 
 If the entire component output can be cached (e.g. it doesn't change per user, or you want to cache the rendered HTML), put `'use cache'` on the component:
@@ -145,7 +176,7 @@ Watch for these errors:
 
 If `cacheComponents` is not enabled:
 
-- Skip `'use cache'`, `cacheTag`, `cacheLife` — they're a no-op or a soft warning.
+- Don't use `'use cache'`, `cacheTag`, `cacheLife`. The exact behavior depends on the Next.js version — older releases warned, current canaries throw at build. Check the release notes for the version you're on.
 - Keep `cache()` from React for per-request dedup.
 - Invalidate via `refresh()` from server actions instead of `updateTag()`. `refresh()` re-renders the route for the current user.
 - Pages can use `await params` or `params.then()` — either works. `params.then()` still helps reads of unrelated chrome paint faster, but there's no build-time prerender to preserve.

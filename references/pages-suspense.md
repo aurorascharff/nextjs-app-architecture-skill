@@ -65,6 +65,37 @@ export async function generateMetadata({ params }: PageProps<'/post/[id]'>): Pro
 }
 ```
 
+### `generateStaticParams` for dynamic routes
+
+For `[slug]`-style routes, export `generateStaticParams` from the page or layout to pre-build a known set of pages. Combined with `cacheComponents` and `'use cache'` on the queries, every listed slug ends up in the static shell:
+
+```tsx
+import { getEvents } from '@/features/event/event-queries';
+
+export async function generateStaticParams() {
+  const events = await getEvents();
+  return events.map(event => ({ slug: event.slug }));
+}
+```
+
+`generateStaticParams` does **not** change the page function signature. `params` is still a Promise; the page still uses `params.then(...)`. The pre-build only affects which slugs prerender at build time.
+
+### `notFound()` from queries
+
+When a query can't find the resource, call `notFound()`:
+
+```ts
+import { notFound } from 'next/navigation';
+
+export const getEventBySlug = cache(async (slug: string) => {
+  const event = await db.event.findUnique({ where: { slug } });
+  if (!event) notFound();
+  return event;
+});
+```
+
+It throws a control-flow error that bubbles to `not-found.tsx` at the nearest segment. Don't wrap this in a try/catch — let it propagate. Use `unstable_rethrow` from `next/navigation` if you need a real try/catch around it.
+
 ## The page owns the Suspense boundary
 
 The feature exports the async component **and** its skeleton. The page imports both and places the boundary. Don't pre-wrap inside the feature — that hides the boundary and prevents grouping siblings.
@@ -136,12 +167,31 @@ Avoid components whose only job is to group boundary content, like `HomeLists` o
 
 ## Error boundaries
 
-Wrap fallible sections in `<ErrorBoundary>` so one failure doesn't take down the page:
+Wrap fallible sections in a Next.js-aware error boundary so one failure doesn't take down the page. Use `unstable_catchError` from `next/error` (Next.js 16.2+) — it knows about Next's control-flow throws (`notFound()`, `redirect()`, `unauthorized()`, `forbidden()`) and re-fetches server data on retry:
 
 ```tsx
-<Suspense fallback={<PostDetailSkeleton />}>
-  <PostDetail id={id} />
-</Suspense>
+// components/ui/error-boundary.tsx
+'use client';
+
+import { unstable_catchError as catchError, type ErrorInfo } from 'next/error';
+
+function ErrorFallback(props: { title?: string }, { unstable_retry: retry }: ErrorInfo) {
+  return (
+    <div>
+      <p>{props.title ?? 'Something went wrong'}</p>
+      <button onClick={() => retry()}>Try again</button>
+    </div>
+  );
+}
+
+export default catchError(ErrorFallback);
+```
+
+Use it around suspending sections:
+
+```tsx
+import ErrorBoundary from '@/components/ui/error-boundary';
+
 <ErrorBoundary title="Replies didn't load">
   <Suspense fallback={<RepliesSkeleton />}>
     <Replies postId={id} />
@@ -149,7 +199,9 @@ Wrap fallible sections in `<ErrorBoundary>` so one failure doesn't take down the
 </ErrorBoundary>
 ```
 
-Pair with `error.tsx` at the route segment for unrecoverable errors.
+Why not plain `react-error-boundary`? It catches Next's framework throws (so `notFound()` never reaches `not-found.tsx`), and `resetErrorBoundary` doesn't re-fetch server data. For background, see [Error Handling in Next.js with catchError](https://aurorascharff.no/posts/error-handling-in-nextjs-with-catch-error/).
+
+Pair component-level boundaries with `error.tsx` at the route segment for unrecoverable errors. `error.tsx` also receives an `unstable_retry` callback you can wire to a button.
 
 ## Layout-level Suspense
 
@@ -195,6 +247,8 @@ For routes where instant-feeling navigation matters (feed, detail pages), opt in
 ```tsx
 export const unstable_prefetch = 'force-runtime';
 ```
+
+This is an **unstable Next.js API** — the `unstable_` prefix means semantics may change between releases. Test on the canary you're targeting and read the release notes before relying on it.
 
 Don't put this on every route. Each opt-in page runs a full render in the background for every `<Link>` that enters the viewport — that costs server CPU and database load. Reserve it for high-value navigation targets. Routes that change rarely or aren't navigated to often stay on the default static prefetch.
 

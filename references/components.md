@@ -232,24 +232,56 @@ For instant feedback on mutations that are unlikely to fail (favorite, vote, fol
 
 ```tsx
 'use client';
-import { useOptimistic } from 'react';
+import { useOptimistic, useTransition } from 'react';
 
 export function FavoriteButton({ slug, favorited }: { slug: string; favorited: boolean }) {
-  const [optimistic, setOptimistic] = useOptimistic(favorited, current => !current);
+  const [optimisticFavorited, setOptimisticFavorited] = useOptimistic(favorited);
+  const [, startTransition] = useTransition();
+
+  function handleClick() {
+    startTransition(async () => {
+      setOptimisticFavorited(!favorited);
+      await toggleFavorite(slug);
+    });
+  }
 
   return (
-    <form
-      action={async () => {
-        setOptimistic(null);
-        await toggleFavorite(slug);
-      }}
-    >
-      <button type="submit">{optimistic ? '★' : '☆'}</button>
-    </form>
+    <button onClick={handleClick}>{optimisticFavorited ? '★' : '☆'}</button>
   );
 }
 ```
 
-The form action runs in a transition automatically. `useOptimistic` rolls back on throw.
+`useOptimistic` returns `[currentValue, setOptimistic]`. Call `setOptimistic(nextValue)` inside a transition — React keeps the optimistic value visible until the transition resolves, then snaps back to the latest server state (`favorited`).
+
+For a form submission, prefer the built-in `<form action>` — React wraps the call in a transition automatically:
+
+```tsx
+<form
+  action={async () => {
+    setOptimisticFavorited(!favorited);
+    await toggleFavorite(slug);
+  }}
+>
+  <button type="submit">{optimisticFavorited ? '★' : '☆'}</button>
+</form>
+```
+
+If you need to compute the next optimistic value from the current one (e.g. incrementing a counter), pass a reducer as the second argument:
+
+```tsx
+const [optimisticVotes, addUpvote] = useOptimistic(
+  { votes, hasVoted },
+  (state, _: void) => (state.hasVoted ? state : { votes: state.votes + 1, hasVoted: true }),
+);
+// ...
+startTransition(async () => {
+  addUpvote();
+  await upvoteQuestion(id);
+});
+```
+
+`useOptimistic` rolls back automatically if the transition throws.
 
 For non-optimistic pending UI (filters, sort changes, deferred work), use `useTransition` with the `data-pending` pattern in `references/ux-patterns.md`. For success/error feedback rules, see the same reference.
+
+For the deeper picture (coordinating `useTransition`, `useOptimistic`, `useActionState`, `data-pending`, Suspense streaming, and caching across server and client), see the [Interactive Apps guide PR](https://github.com/vercel/next.js/pull/94020) — not merged yet, but the canonical reference until it lands at `nextjs.org/docs/app/guides/interactive-apps`.

@@ -49,7 +49,7 @@ If `cacheComponents` is not enabled, skip `'use cache'`. Keep `cache()` for requ
 Create `features/<domain>/<domain>-actions.ts`. Mark with `'use server'` at the top. Always:
 
 1. Verify auth.
-2. Validate input (Zod, valibot, etc.).
+2. Validate input with your schema validator.
 3. Run the mutation.
 4. Invalidate cached data.
 5. Return a result (`{ ok }` or `{ error }`).
@@ -58,9 +58,6 @@ Create `features/<domain>/<domain>-actions.ts`. Mark with `'use server'` at the 
 'use server';
 
 import { updateTag } from 'next/cache';
-import { z } from 'zod';
-
-const schema = z.object({ body: z.string().min(1).max(500) });
 
 export async function createPost(formData: FormData) {
   const user = await verifyUser();
