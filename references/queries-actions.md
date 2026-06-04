@@ -99,16 +99,6 @@ async function Post({ id }: { id: string }) {
 }
 ```
 
-### Exception: parameter-bound actions
-
-When the child shouldn't know about the parent's id, bind it at the call site:
-
-```tsx
-<DeleteButton onAction={deletePost.bind(null, post.id)} />
-```
-
-This is fine — the action prop now takes no arguments, the child just calls it.
-
 Design components (`<BottomNav>`, `<ToggleGroup>`, `<SubmitButton>`) take this further with the **action-prop pattern** — `action` is a callback wrapped in `useTransition` / `useOptimistic` internally. See `references/ux-patterns.md`.
 
 ## Form actions vs onClick handlers

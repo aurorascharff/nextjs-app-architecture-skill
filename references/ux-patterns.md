@@ -209,20 +209,6 @@ export async function Feed({ page = 1 }: { page?: number }) {
 
 The "Load more" button uses [`<Link scroll={false}>`](https://nextjs.org/docs/app/api-reference/components/link) (or `router.push(url, { scroll: false })` inside `startTransition`). Each page is a separate request; the cache layer handles dedup.
 
-## Active navigation links without Suspense
-
-[`usePathname()`](https://nextjs.org/docs/app/api-reference/functions/use-pathname) and [`useSearchParams()`](https://nextjs.org/docs/app/api-reference/functions/use-search-params) from `next/navigation` require a Suspense boundary above them. For top-of-tree UI that paints in the static shell, the boundary cost outweighs the benefit.
-
-Workaround: read the URL via [`useSyncExternalStore`](https://react.dev/reference/react/useSyncExternalStore) over `window.location` and seed initial render with an inline pre-paint script that sets `data-navlink-active` / form `value` attributes before paint. The hook subscribes to `popstate` and pushState for client-side updates.
-
-This is an escape hatch. Use it only when:
-
-- The component renders in a high-frequency spot (top nav, sidebar, every page)
-- A Suspense boundary at that spot would cover important static content
-- The pathname/searchParams is read for cosmetic purposes (active styling, default form values), not for data fetching
-
-For data fetching that depends on `searchParams`, read it server-side in the page (`searchParams.then(...)`) instead.
-
 ## Global client state
 
 If the app has truly global client state (audio player, shopping cart, theme that needs to react to system changes), wrap a [provider](https://react.dev/reference/react/createContext#provider) with [`useReducer`](https://react.dev/reference/react/useReducer) at the root:
@@ -247,20 +233,6 @@ export function useAppState() {
 The provider is `'use client'`, but `children` stays server-rendered. Place the provider in the root layout. Only leaf components call `useContext`.
 
 **Don't** push server data into global client state. Keep server data in queries; client state is for ephemeral UI (open menus, audio playback position, optimistic drafts).
-
-## Interactive list spacing
-
-When rendering a vertical list of interactive rows with hover backgrounds, add a small gap so hover effects don't merge into a single block:
-
-```html
-<ul className="flex flex-col gap-0.5">
-  {items.map(item => (
-    <li key={item.id} className="rounded hover:bg-muted px-2 py-1">...</li>
-  ))}
-</ul>
-```
-
-`gap-0.5` is usually enough — visually negligible but enough to keep hover backgrounds discrete.
 
 ## Form pending state from `useFormStatus`
 

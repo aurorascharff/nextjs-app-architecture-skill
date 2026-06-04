@@ -240,17 +240,17 @@ Fixes:
 
 To audit CLS, use React DevTools' Suspense panel to pin each boundary in its loading state and check vertical positions.
 
-## `unstable_prefetch` for instant navigation
+## Optional: opt-in prefetch for high-value routes
 
-For routes where instant-feeling navigation matters (feed, detail pages), opt in to runtime prefetching:
+For routes where instant-feeling navigation matters most (feed, detail pages), opt in to runtime prefetching at the route level:
 
 ```tsx
 export const unstable_prefetch = 'force-runtime';
 ```
 
-This is an **unstable Next.js API** — the `unstable_` prefix means semantics may change between releases. Test on the canary you're targeting and read the release notes before relying on it.
+This is **optional and unstable**. The `unstable_` prefix means semantics may change between releases — test on the canary you're targeting. It's not part of the core architecture; reach for it when you've measured the navigation feels slow on a high-value route and want to trade server CPU for perceived speed.
 
-Don't put this on every route. Each opt-in page runs a full render in the background for every `<Link>` that enters the viewport — that costs server CPU and database load. Reserve it for high-value navigation targets. Routes that change rarely or aren't navigated to often stay on the default static prefetch.
+Don't put this on every route. Each opt-in page runs a full render in the background for every `<Link>` that enters the viewport — that costs server CPU and database load. Reserve it for high-value navigation targets.
 
 ## Never wrap the entire page in a Suspense fallback
 
