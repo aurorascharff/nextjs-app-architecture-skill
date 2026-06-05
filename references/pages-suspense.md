@@ -54,6 +54,10 @@ export default function PostPage({ params }: PageProps<'/post/[id]'>) {
 
 The `<h1>` sits **above** the `params.then()` so it paints instantly. The `Suspense` fallback covers only the dynamic section.
 
+### Implicit return inside `.then()`
+
+Use an implicit-return arrow function when the callback just renders JSX — e.g. `({ id }) => <PostDetail id={id} />`. Only switch to a block body with `return` when you need to do work first (destructure with defaults, parse a `searchParams` value, branch on a condition). This keeps the JSX-in-page shape readable and matches how the resolved tree will look.
+
 ### `searchParams` and combined params
 
 ```tsx
