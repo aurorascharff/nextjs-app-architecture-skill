@@ -264,17 +264,17 @@ Fixes:
 
 To audit CLS, use React DevTools' Suspense panel to pin each boundary in its loading state and check vertical positions.
 
-## Optional: opt-in prefetch for high-value routes
+## Opt-in runtime prefetch for high-value routes
 
-For routes where instant-feeling navigation matters most (feed, detail pages), opt in to runtime prefetching at the route level:
+Next.js 16.3 turns on **Partial Prefetching** by default: links in the viewport prepare the destination's reusable App Shell so the navigation commits instantly, even before per-request data lands. For routes where you also want the framework to prefetch per-request data behind params, `searchParams`, or `'use cache: private'`, opt in at the route level:
 
 ```tsx
-export const unstable_prefetch = 'force-runtime';
+export const prefetch = 'allow-runtime';
 ```
 
-This is **optional and unstable**. The `unstable_` prefix means semantics may change between releases — test on the canary you're targeting. It's not part of the core architecture; reach for it when you've measured the navigation feels slow on a high-value route and want to trade server CPU for perceived speed.
+Pair it with `<Link prefetch={true} href="…">` at the call sites — explicit on the link, explicit on the page. Reserve this for high-value navigation targets (feed, detail pages); each opt-in page runs a full render in the background for every `<Link>` that enters the viewport, which costs server CPU and database load.
 
-Don't put this on every route. Each opt-in page runs a full render in the background for every `<Link>` that enters the viewport — that costs server CPU and database load. Reserve it for high-value navigation targets.
+> Pre-16.3 this was `export const unstable_prefetch = 'force-runtime'`. The new name dropped the `unstable_` prefix and changed the value from `force-` to `allow-` to reflect that runtime prefetching is now opt-in cooperation with Partial Prefetching rather than a forced override.
 
 ## Never wrap the entire page in a Suspense fallback
 
