@@ -1,6 +1,6 @@
 # Cache Components
 
-The model and constraints when `cacheComponents: true` is set in `next.config.ts`.
+The model and constraints when [`cacheComponents: true`](https://nextjs.org/docs/canary/app/api-reference/config/next-config-js/cacheComponents) is set in `next.config.ts`.
 
 ## When to enable it
 
@@ -24,9 +24,7 @@ Without `cacheComponents`, you still get RSC streaming and Suspense — you just
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  experimental: {
-    cacheComponents: true,
-  },
+  cacheComponents: true,
 };
 
 export default nextConfig;
@@ -176,9 +174,9 @@ Watch for these errors:
 
 If `cacheComponents` is not enabled:
 
-- Don't use `'use cache'`, `cacheTag`, `cacheLife`. The exact behavior depends on the Next.js version — older releases warned, current canaries throw at build. Check the release notes for the version you're on.
+- Don't use `'use cache'`, [`cacheTag`](https://nextjs.org/docs/canary/app/api-reference/functions/cacheTag), or [`cacheLife`](https://nextjs.org/docs/canary/app/api-reference/config/next-config-js/cacheLife) — they require the flag.
 - Keep `cache()` from React for per-request dedup.
-- Invalidate via `refresh()` from server actions instead of `updateTag()`. `refresh()` re-renders the route for the current user.
-- Pages can use `await params` or `params.then()` — either works. `params.then()` still helps reads of unrelated chrome paint faster, but there's no build-time prerender to preserve.
+- Invalidate via [`refresh()`](https://nextjs.org/docs/canary/app/api-reference/functions/refresh) from server actions instead of `updateTag()`. `refresh()` re-renders the route for the current user.
+- Pages can use `await params` or `params.then()` — either works. `params.then()` still helps unrelated chrome paint faster, but there's no build-time prerender to preserve.
 
 The rest of the architecture (feature folders, async server components, Suspense at the page) works identically.
