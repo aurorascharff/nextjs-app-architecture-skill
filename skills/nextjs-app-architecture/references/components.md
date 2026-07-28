@@ -6,6 +6,8 @@ How to build server and client components inside a feature folder.
 
 Server components await their own queries directly — no `useEffect`, no client-side fetching, no manual loading state. See the [Server Components docs](https://preview.nextjs.org/docs/app/getting-started/server-and-client-components) for the model.
 
+Prefer minimal, stable props: IDs, slugs, handles, parsed filters, or records the parent already fetched. Do not pass raw route `params` or `searchParams` into feature components. Pages resolve those promises and pass plain values.
+
 ```tsx
 // features/notifications/components/notifications-badge.tsx
 import { getUnreadNotificationCount } from '@/features/notifications/notifications-queries';
@@ -17,12 +19,25 @@ export async function NotificationsBadge() {
 }
 ```
 
-Wrapped at the page or layout level with Suspense:
+The page (not this file) wraps it in `<Suspense fallback={<NotificationsBadgeSkeleton />}>` — see `references/pages-suspense.md`.
+
+For parameterized routes, the page resolves `params` and the feature receives an ID:
 
 ```tsx
-<Suspense fallback={<NotificationsBadgeSkeleton />}>
-  <NotificationsBadge />
+// app/post/[id]/page.tsx
+<Suspense fallback={<PostDetailSkeleton />}>
+  {params.then(({ id }) => (
+    <PostDetail id={id} />
+  ))}
 </Suspense>
+```
+
+```tsx
+// features/post/components/post-detail.tsx
+export async function PostDetail({ id }: { id: string }) {
+  const post = await getPost(id);
+  return <article>{post.body}</article>;
+}
 ```
 
 ## Skeletons live in the same file
@@ -54,6 +69,17 @@ export function FeedSkeleton() {
 }
 ```
 
+Don't export a second skeleton whose whole job is to rename or preconfigure another skeleton:
+
+```tsx
+// Wrong — alias wrapper adds an import surface but no behavior
+export function CompactGridSkeleton() {
+  return <GridSkeleton dense />;
+}
+```
+
+Import the real skeleton and pass the prop inline at the `<Suspense>` boundary: `fallback={<GridSkeleton dense />}`.
+
 ### Skeleton design checklist
 
 1. Match the real component's layout: flex direction, gaps, padding, breakpoints.
@@ -65,7 +91,7 @@ export function FeedSkeleton() {
 
 ## Group related components in one file
 
-A card and its grid live in the same file. For example, `genre-card.tsx` exports `GenrePill`, `GenreCard`, `GenreGrid`, `GenreGridSkeleton`. Don't split shared UI primitives prematurely — wait until three call sites need the same shape before extracting.
+A card and its grid live in the same file. For example, `genre-card.tsx` exports `GenrePill`, `GenreCard`, `GenreGrid`, `GenreGridSkeleton`. Variants should reuse that skeleton inline instead of exporting alias skeletons. Don't split shared UI primitives prematurely — wait until three call sites need the same shape before extracting.
 
 Two sidebar widgets that happen to look similar but render different data shapes are **not** the same component. The visuals diverge as soon as one needs an extra slot.
 
@@ -131,7 +157,7 @@ Composition crosses the boundary. A client component can accept server-rendered 
 
 ### Pass server children resolved values, not promises
 
-Prefer passing plain values (strings, IDs, resolved data) to a server child. A server component *can* `await` a promise prop, but resolve it in the parent instead — pass an unresolved promise down only to a *client* component that reads it with `use()` (see above). When a parent already has the data from its own query, pass it as a prop instead of having the child refetch.
+Prefer passing plain values (strings, IDs, resolved data) to a server child. A server component *can* `await` a promise prop, but resolve route promises in the page instead — pass an unresolved promise down only to a *client* component that reads it with `use()` (see below). When a parent already has the data from its own query, pass it as a prop instead of having the child refetch.
 
 ```tsx
 // Right — parent fetches the list, passes each item
@@ -158,7 +184,7 @@ async function Post({ id }: { id: string }) {
 When a client component needs server data but should manage its own loading (a sidebar badge, a popover that opens on hover), pass an **unresolved promise** from the server and resolve it with [`use()`](https://react.dev/reference/react/use) on the client. Wrap the consumer in `<Suspense>`.
 
 ```tsx
-// Server side — don't await the query
+// page: pass the unresolved promise, wrap in Suspense
 <Suspense fallback={<TagListSkeleton />}>
   <TagPicker itemsPromise={getTags()} />
 </Suspense>
@@ -170,7 +196,7 @@ import { use } from 'react';
 
 export function TagPicker({ itemsPromise }: { itemsPromise: Promise<Tag[]> }) {
   const items = use(itemsPromise);
-  // ...
+  // render interactive UI from items
 }
 ```
 

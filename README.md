@@ -4,7 +4,7 @@ A collection of [agent skills](https://skills.sh) I maintain. Each lives under [
 
 | Skill | What it's for |
 | ----- | ------------- |
-| [`nextjs-app-architecture`](skills/nextjs-app-architecture) | Architecture patterns for Next.js 16+ App Router apps — feature-sliced design, Suspense streaming, optional Cache Components. |
+| [`nextjs-app-architecture`](skills/nextjs-app-architecture) | Build or audit Next.js 16+ App Router apps with a next-beats-style RSC architecture, Suspense streaming, and Cache Components practice. |
 | [`friction-log`](skills/friction-log) | Records agentic developer-experience friction during a build, and produces a structured, severity-coded markdown log. |
 
 Install any skill with:
@@ -17,27 +17,32 @@ npx skills add aurorascharff/skills/skills/<skill-name>
 
 ## `nextjs-app-architecture`
 
-Architecture patterns for Next.js 16+ App Router apps. Packages the patterns from [Component Architecture for React Server Components](https://aurorascharff.no/posts/component-architecture-for-react-server-components/) into a form AI coding agents can load and apply.
+Build or audit Next.js 16+ App Router apps. Packages the patterns from [Component Architecture for React Server Components](https://aurorascharff.no/posts/component-architecture-for-react-server-components/) and the [next-beats](https://github.com/vercel-labs/next-beats) reference app into a form AI coding agents can load and apply.
 
 ```bash
 npx skills add aurorascharff/skills/skills/nextjs-app-architecture
 ```
 
-### The five principles
+### The six principles
 
 - **Pages are synchronous compositors.** They don't fetch, they compose.
 - **Async components fetch their own data.** Co-locate the read with the JSX.
+- **Route props stop at the page.** Components receive IDs, slugs, parsed filters, or records — not raw `params` / `searchParams`.
 - **Skeletons live next to their component.** Same file, exported alongside it.
 - **Suspense boundaries go at the page level.** The page designs the loading sequence.
 - **Client boundaries are leaf nodes.** Push `'use client'` as deep as it can go.
 
+### Prerequisite
+
+Before using the skill on a project, follow the [Next.js AI Coding Agents guide](https://preview.nextjs.org/docs/app/guides/ai-agents) so the agent reads version-matched Next.js docs from `AGENTS.md` / bundled docs instead of stale training data.
+
 ### What it covers
 
 - **Feature folders** — when to create one, when to merge a sub-concept into a parent, file naming.
-- **Queries** — `import 'server-only'`, `cache()` for dedup, `'use cache'` + `cacheTag` + `cacheLife` for Cache Components.
-- **Actions** — `'use server'`, input validation, `refresh()` / `updateTag()` invalidation, calling from client components.
-- **Components** — async server components, sibling skeletons, single-use helpers, the client boundary, the `use()` + promise-prop pattern, live data via polling.
-- **Pages** — `params.then()` for static-shell preservation, Suspense boundary placement, CLS prevention, error boundaries.
+- **Queries** — `import 'server-only'`, plain async reads by default, selective React `cache()` only for proven same-request dedup, and `'use cache'` + `cacheTag` + `cacheLife` for Cache Components.
+- **Actions** — `'use server'`, input validation, tag invalidation under Cache Components, calling from client components.
+- **Components** — async server components that receive IDs/parsed values, sibling skeletons, single-use helpers, the client boundary, the `use()` + promise-prop pattern, live data via polling.
+- **Pages** — sync page composition, `params.then()` for static-shell preservation, Suspense boundary placement, CLS prevention, error boundaries, audit smells.
 - **Cache Components** — when to opt in, the static-shell model, `'use cache'` variants, build constraints.
 - **UX patterns** — `useOptimistic`, toasts, pending state, destructive-action flows, the action-prop pattern, URL pagination.
 
@@ -48,13 +53,14 @@ The `SKILL.md` overview is always loaded; references split into two zones so the
 **Core** (any RSC app):
 
 - [`references/feature-folders.md`](skills/nextjs-app-architecture/references/feature-folders.md) — folder layout, naming, merging sub-concepts, action/query file naming.
-- [`references/queries-actions.md`](skills/nextjs-app-architecture/references/queries-actions.md) — server-only queries, `cache()` dedup, server actions, validation, `refresh()` invalidation.
-- [`references/components.md`](skills/nextjs-app-architecture/references/components.md) — async server components, skeletons, client boundary, promise + `use()`, single-use helpers, polling.
+- [`references/queries-actions.md`](skills/nextjs-app-architecture/references/queries-actions.md) — server-only queries, selective same-request dedup, server actions, validation, and cache/tag invalidation.
+- [`references/components.md`](skills/nextjs-app-architecture/references/components.md) — async server components, skeletons without alias wrappers, client boundary, promise + `use()`, single-use helpers, polling.
 - [`references/pages-suspense.md`](skills/nextjs-app-architecture/references/pages-suspense.md) — page composition, `PageProps` / `LayoutProps`, `params.then()`, Suspense placement, CLS prevention, error boundaries.
+- [`references/example.md`](skills/nextjs-app-architecture/references/example.md) — next-beats invariant map and supporting patterns.
 
 **Instant Apps** (opt-in, load only when optimizing for instant-feeling apps):
 
-- [`references/cache-components.md`](skills/nextjs-app-architecture/references/cache-components.md) — `cacheComponents: true`, the static shell, `'use cache'` variants, `cacheTag` / `cacheLife`, `updateTag` / `revalidateTag`, `connection()`.
+- [`references/cache-components.md`](skills/nextjs-app-architecture/references/cache-components.md) — `cacheComponents: true`, the static shell, which reads to cache, `'use cache'` variants, `cacheTag` / `cacheLife`, `updateTag` / `revalidateTag`, and `io()` vs `connection()`.
 - [`references/ux-patterns.md`](skills/nextjs-app-architecture/references/ux-patterns.md) — `useOptimistic`, toasts, pending state via `data-pending`, destructive flows, the action-prop pattern, URL pagination, `useFormStatus`.
 
 ### Background reading

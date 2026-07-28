@@ -1,16 +1,20 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.5",
   "organization": "Aurora Scharff",
   "date": "July 2026",
-  "abstract": "Architecture patterns for Next.js 16 App Router apps with feature-sliced design, Suspense streaming, and optional Cache Components. Covers feature folder layout, server-only queries, server actions, async server components, the client boundary, and page composition with params.then() for static-shell preservation. References cover each topic in depth so the agent only loads what's needed for the task.",
+  "abstract": "Build and audit Next.js 16 App Router apps with a next-beats-style RSC architecture: synchronous pages that compose static shells, Suspense, and error boundaries; feature-owned async server components that receive IDs or parsed values; co-located skeletons; server-only queries; server actions; and enforced Cache Components practice when enabled. References cover each topic in depth so the agent only loads what's needed for the task.",
   "references": [
     "https://preview.nextjs.org/docs/app",
+    "https://preview.nextjs.org/docs/app/guides/ai-agents",
     "https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents",
     "https://preview.nextjs.org/docs/app/api-reference/directives/use-cache",
     "https://preview.nextjs.org/docs/app/api-reference/functions/cacheTag",
     "https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/cacheLife",
     "https://preview.nextjs.org/docs/app/api-reference/functions/updateTag",
     "https://preview.nextjs.org/docs/app/guides/adopting-partial-prefetching",
-    "https://preview.nextjs.org/docs/app/guides/interactive-apps"
+    "https://preview.nextjs.org/docs/app/guides/migrating-to-cache-components",
+    "https://preview.nextjs.org/docs/app/guides/interactive-apps",
+    "https://aurorascharff.no/posts/component-architecture-for-react-server-components/",
+    "https://github.com/vercel-labs/next-beats"
   ]
 }
