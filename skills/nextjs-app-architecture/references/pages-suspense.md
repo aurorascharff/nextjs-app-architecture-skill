@@ -284,7 +284,7 @@ If you can't enable `partialPrefetching` app-wide yet, opt in per route with `ex
 
 The default (`'auto'`) already fetches the shared App Shell, so don't write `prefetch = 'auto'` explicitly. From that baseline you adjust in two directions.
 
-### Prefetch more: `prefetch={true}` + `prefetch = 'allow-runtime'`
+### Prefetch more: `<Link prefetch={true}>`
 
 Set `<Link prefetch={true}>` on high-value links to also pull the destination's cached page content:
 
@@ -294,12 +294,7 @@ Set `<Link prefetch={true}>` on high-value links to also pull the destination's 
 </Link>
 ```
 
-That still doesn't resolve per-link runtime data. Values that depend on `params`, `searchParams`, or the full URL wait until the click unless the destination also opts in with `export const prefetch = 'allow-runtime'`:
-
-```tsx
-// app/track/[id]/page.tsx
-export const prefetch = 'allow-runtime';
-```
+On a destination with Partial Prefetching enabled — globally via `partialPrefetching`, or per segment with `export const prefetch = 'partial'` — `prefetch={true}` also resolves the per-link runtime data: values that depend on `params`, `searchParams`, or the full URL, ready before the click instead of after it.
 
 ```tsx
 <Link href={`/track/${id}`} prefetch={true}>
@@ -307,7 +302,7 @@ export const prefetch = 'allow-runtime';
 </Link>
 ```
 
-Each such visible link can wake the server for a runtime prerender, so reserve it for routes users predictably visit next and let the rest ride on the App Shell. See [runtime prefetching](https://preview.nextjs.org/docs/app/guides/runtime-prefetching). (The `'allow-runtime'` API is expected to change soon; use it as-is for now.)
+Each such visible link can wake the server for a runtime prerender, so reserve it for routes users predictably visit next and let the rest ride on the App Shell. See [runtime prefetching](https://preview.nextjs.org/docs/app/guides/runtime-prefetching).
 
 ### Prefetch nothing: rarely what you want
 

@@ -4,7 +4,7 @@ description: Architecture patterns for Next.js 16 App Router apps. Use when scaf
 license: MIT
 metadata:
   author: aurorascharff
-  version: '1.1.0'
+  version: '1.2.0'
 ---
 
 # Next.js App Architecture
