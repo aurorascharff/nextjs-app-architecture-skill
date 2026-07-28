@@ -12,7 +12,7 @@ Pages in `app/` import feature components and place `<Suspense>` boundaries. The
 
 ## Page function signatures
 
-Type page and layout functions with the generated `PageProps<'/route'>` and `LayoutProps<'/route'>` helpers — they're emitted by [`typedRoutes`](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/typedRoutes) and give you the correct `params` / `searchParams` / `children` shape for that exact route.
+Type page and layout functions with the `PageProps<'/route'>` and `LayoutProps<'/route'>` helpers — [generated automatically](https://preview.nextjs.org/docs/app/api-reference/config/typescript#route-type-helpers) (available without imports, regenerated on `next dev` / `next build` / `next typegen`) with the correct `params` / `searchParams` / `children` shape for that exact route.
 
 ```tsx
 // app/post/[id]/page.tsx
@@ -28,7 +28,7 @@ export default function PostLayout({ children, params }: LayoutProps<'/post/[id]
 }
 ```
 
-Don't hand-write `{ params: Promise<{ id: string }> }` — the generated types stay in sync with the route, including catch-all and optional segments. Route handlers have their own `RouteContext<'/api/...'>`. Turn on `typedRoutes: true` in `next.config.ts`.
+Don't hand-write `{ params: Promise<{ id: string }> }` — the generated types stay in sync with the route, including catch-all and optional segments. Route handlers have their own `RouteContext<'/api/...'>`. (Separately, [`typedRoutes: true`](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/typedRoutes) opts into statically-typed `href`s — a different feature, not the source of these helpers.)
 
 ## Keep pages synchronous
 
@@ -191,15 +191,15 @@ Avoid components whose only job is to group boundary content, like `HomeLists` o
 
 ## Error boundaries
 
-Wrap fallible sections in a Next.js-aware error boundary so one failure doesn't take down the page. Use `unstable_catchError` from `next/error` (Next.js 16.2+) — it knows about Next's control-flow throws (`notFound()`, `redirect()`, `unauthorized()`, `forbidden()`) and re-fetches server data on retry:
+Wrap fallible sections in a Next.js-aware error boundary so one failure doesn't take down the page. Use [`catchError`](https://preview.nextjs.org/docs/app/api-reference/functions/catchError) from `next/error` — it knows about Next's control-flow throws (`notFound()`, `redirect()`, `unauthorized()`, `forbidden()`) and re-fetches server data on retry:
 
 ```tsx
 // components/ui/error-boundary.tsx
 'use client';
 
-import { unstable_catchError as catchError, type ErrorInfo } from 'next/error';
+import { catchError, type ErrorInfo } from 'next/error';
 
-function ErrorFallback(props: { title?: string }, { unstable_retry: retry }: ErrorInfo) {
+function ErrorFallback(props: { title?: string }, { retry }: ErrorInfo) {
   return (
     <div>
       <p>{props.title ?? 'Something went wrong'}</p>
@@ -225,14 +225,14 @@ import ErrorBoundary from '@/components/ui/error-boundary';
 
 Why not plain `react-error-boundary`? It catches Next's framework throws (so `notFound()` never reaches `not-found.tsx`), and `resetErrorBoundary` doesn't re-fetch server data. For background, see [Error Handling in Next.js with catchError](https://aurorascharff.no/posts/error-handling-in-nextjs-with-catch-error/).
 
-Pair component-level boundaries with [`error.tsx`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/error) at the route segment for unrecoverable errors. `error.tsx` also receives an `unstable_retry` callback you can wire to a button.
+Pair component-level boundaries with [`error.tsx`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/error) at the route segment for unrecoverable errors. `error.tsx` also receives a `retry` callback you can wire to a button.
 
 ## Layout-level Suspense
 
 Layouts compose feature components the same way pages do. Use `<Suspense>` for slots that fetch data (auth badge, sidebar):
 
 ```tsx
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html>
       <body>
@@ -306,7 +306,7 @@ Each such visible link can wake the server for a runtime prerender, so reserve i
 
 ### Prefetch nothing: rarely what you want
 
-`<Link prefetch={false}>` — or `export const prefetch = 'force-disabled'` on the segment — skips prefetching entirely, including the App Shell, so you forfeit instant navigation. The App Shell is cheap and shared across every link to the route, so turning it off almost never pays off. Don't reach for it just because a route is low-value; leave those at the default. Reserve it for routes that should genuinely never prefetch, like rarely-visited pages behind auth.
+`<Link prefetch={false}>` or `export const prefetch = 'force-disabled'` skips prefetching entirely, App Shell included. The shell is cheap and shared, so this almost never pays off — don't reach for it just because a route is low-value. Reserve it for routes that should genuinely never prefetch, like rarely-visited pages behind auth. See [prefetch config](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/prefetch#force-disabled).
 
 To validate that navigation actually feels instant once you've opted in, see the [`instant` route segment config](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant) and the [Instant Navigation guide](https://preview.nextjs.org/docs/app/guides/instant-navigation).
 

@@ -47,7 +47,7 @@ export async function createPost(formData: FormData) {
 }
 ```
 
-[`refresh()`](https://preview.nextjs.org/docs/app/api-reference/functions/refresh) re-renders the current route for the current user. With Cache Components, you'd swap this for `updateTag('feed')` to invalidate everything tagged `feed` and get read-your-own-writes across users — see `references/cache-components.md`.
+[`refresh()`](https://preview.nextjs.org/docs/app/api-reference/functions/refresh) re-renders the current route for the current user. It's the right tool whenever the query is dynamic (no `'use cache'`) — including under Cache Components, if you've deliberately cached nothing. Reach for `updateTag('feed')` only once the query is actually cached with a matching `cacheTag('feed')`; then it invalidates that tag so the acting user gets read-your-own-writes immediately and other users get fresh data on their next render. See `references/cache-components.md`.
 
 ### Action file naming
 
@@ -87,10 +87,12 @@ For one-off buttons, `onClick={() => action(args)}` is fine. Wrap in [`startTran
 Return a discriminated union from actions that can fail:
 
 ```tsx
-export type ActionResult<T = void> = { ok: true; data: T } | { ok: false; error: string };
+export type ActionResult<T = void> = { ok: true; data?: T } | { ok: false; error: string };
 ```
 
 Toast on `ok: false` from the client. Skip success toasts when an optimistic UI already shows the result.
+
+A shared `ActionResult<T>` is optional — a per-action inline union is just as good, and often clearer when the payload has a natural name: `return { ok: true as const, playlist }` reads better than a generic `data`. What matters is that fallible actions return a discriminated union the client can narrow on, not that every action shares one type.
 
 ## Mappers and domain types
 

@@ -32,6 +32,7 @@ Concepts that exist only in service of a parent entity belong inside the parent'
 - A `favorite` or `bookmark` concept that only attaches to one parent entity (events, posts) → inside that parent's folder.
 - A `like`, `repost`, `vote`, or `reaction` concept on a piece of content → with that content's feature.
 - `auth` / `session` / `current user` → a single `user` folder, not split.
+- A cross-cutting concern like `search` folds into the primary content feature it queries (`searchTracks` in `features/track/`), not a `features/search/` folder — the page composes it.
 
 Concrete example: `toggleFavorite` is a mutation about events ("I favorite an event"), not its own domain. It lives in `features/event/event-actions.ts`, not `features/favorite/favorite-actions.ts`.
 
@@ -51,6 +52,7 @@ features/event/
 
 - `<folder>-queries.ts` — even if the file has only one query.
 - `<folder>-actions.ts` — even if a mutation is about a sub-concept.
+- Other `<folder>-*.ts` files are fine when the folder needs them (`playlist-constants.ts`, `<folder>-schema.ts`), as long as they keep the folder-name prefix.
 - Component files use any descriptive name. The component (not the feature) is the unit here.
 
 ## What goes in `components/`
@@ -89,14 +91,18 @@ See `references/pages-suspense.md` for page composition details.
 app/                  # Pages and layouts
 features/             # Domain folders
 components/           # UI primitives, theme, and app-shell singletons
+hooks/                # Shared client hooks used across features
 types/                # Domain types (optional — co-located is also fine)
-lib/                  # Utility functions
+lib/                  # Utilities and cohesive non-domain subsystems
 ```
+
+`lib/` holds flat helpers (`db.ts`, `utils.ts`) but may also group a cohesive non-domain subsystem in its own subfolder (e.g. `lib/audio/` for an audio engine). Cross-feature client hooks live in top-level `hooks/`; a hook used by a single feature can co-locate in that feature.
 
 `components/` holds:
 
 - **`components/ui/`** — primitives. Low-level building blocks and action-prop components.
 - **`components/theme/`** — theme provider and toggle, paired.
 - **Top-level files** (`site-header.tsx`, `auth-gate.tsx`, `poller.tsx`) — app-shell singletons used once each. No `common/` folder — "common" is not a category. If a component is used everywhere it's a primitive (→ `ui/`); if it's used once it lives at the top level.
+- **Purpose-named subfolders** are fine when several files share a clear technical role — e.g. `components/scripts/` for pre-hydration inline `<script>` seed components. This is distinct from the rejected `common/`: a `scripts/` folder names *what the files are*, not "miscellaneous."
 
 Conventions for filenames and casing live in the project's `AGENTS.md`. This skill doesn't impose one.

@@ -42,6 +42,13 @@ If the app uses view transitions, portaled/floating elements flicker during rout
 
 Any UI library that renders portaled content needs this treatment. The fix is the same regardless of which library: pass an inline style with `viewTransitionName: 'none'` on the portal's root element.
 
+When a portal also needs stacking control (z-index) or has translucent layers (a backdrop-blur), give it a *named* transition instead and neutralize it in CSS — this can do things `'none'` can't:
+
+```css
+::view-transition-group(modal-backdrop) { animation: none; z-index: 200; }
+::view-transition-old(modal-backdrop) { display: none; } /* avoid double-blur */
+```
+
 For more on view transitions, see the [React View Transitions skill](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-view-transitions).
 
 ## Destructive actions with confirmation
@@ -114,8 +121,9 @@ Key rules (the rest is in the React docs):
 - Call `setOptimistic` inside a [transition](https://react.dev/reference/react/useTransition), not as a free update.
 - Inside `<form action={…}>`, React opens the transition for you — call `setOptimistic` directly in the action body.
 - For counter-style updates, pass a reducer as the second argument so the next value is derived from the current one (vote counts, like counts).
+- `useOptimistic(false)` is a handy transition-scoped **pending flag** — `const [isPending, setPending] = useOptimistic(false)`, set it `true` in the action body, and it resets automatically when the transition settles (no manual `finally`).
 
-For the deeper picture (coordinating `useTransition`, `useOptimistic`, `useActionState`, Suspense streaming, and caching across server and client), see the [Interactive Apps guide PR](https://github.com/vercel/next.js/pull/94020) — not merged yet, but the canonical reference until it lands at `nextjs.org/docs/app/guides/interactive-apps`.
+For the deeper picture (coordinating `useTransition`, `useOptimistic`, `useActionState`, Suspense streaming, and caching across server and client), see the [Building interactive apps guide](https://preview.nextjs.org/docs/app/guides/interactive-apps).
 
 ## Pending state without `useOptimistic`
 
@@ -160,7 +168,7 @@ Or with Tailwind:
 </div>
 ```
 
-The pending state bubbles up through CSS without prop drilling.
+The pending state bubbles up through CSS without prop drilling. When the fading element is a *direct* parent of the `data-pending` node, skip the `group` marker and use the plain variant — `has-data-pending:opacity-50` — since `:has()` matches its own descendants.
 
 ## The action-prop pattern
 
@@ -208,9 +216,9 @@ Consumer:
 <BottomNav tabs={tabs} activeIndex={activeIndex} action={href => router.push(href)} />
 ```
 
-**Convention**: when a prop is called `action`, it runs in a transition. When it's called `onChange`, it's a plain callback. Renaming `onChange` → `action` is a contract change, not just a rename.
+**Convention**: an action-style prop signals "this triggers a mutation the component coordinates," versus a plain `onChange`/`onClick` callback. Name it `action` or with an `*Action` suffix (`toggleAction`, `confirmAction`) — renaming `onChange` → `action` is a contract change, not just a rename.
 
-This pattern lets the design component handle all the async coordination (transitions, optimistic updates, pending state, dimming) once. Consumers pass a simple callback.
+This pattern lets the design component handle the async coordination (optimistic updates, pending state, dimming) once, so consumers pass a simple callback. One caveat: **not every action-prop should be wrapped in a transition.** A destructive `confirmAction` behind a dialog is awaited *without* a transition (see below), so the dialog can show its own pending state and block until the mutation resolves. Transition-wrapping is the default for optimistic/navigation actions, not a rule for every prop named `action`.
 
 ## URL-based pagination
 
@@ -289,6 +297,28 @@ function SubmitButton({ children }: { children: React.ReactNode }) {
 
 This is the cleanest way to handle "disable + spinner" on submit without lifting state.
 
+## Inline field errors from `useActionState`
+
+Toasts suit transient, whole-action feedback. For form **validation** errors that belong next to the field, use [`useActionState`](https://react.dev/reference/react/useActionState): the action returns `{ error }`, and you render it inline with `aria-invalid` + `role="alert"` for accessibility.
+
+```tsx
+'use client';
+import { useActionState } from 'react';
+
+export function SignInForm() {
+  const [state, formAction] = useActionState(signIn, null);
+  return (
+    <form action={formAction}>
+      <input name="email" aria-invalid={!!state?.error} aria-describedby="email-error" />
+      {state?.error && <p id="email-error" role="alert">{state.error}</p>}
+      <SubmitButton>Sign in</SubmitButton>
+    </form>
+  );
+}
+```
+
+Use inline errors for "fix this field" feedback; use toasts for "that didn't work" feedback on one-shot mutations.
+
 ## Error states in components
 
-When a query throws, `error.tsx` at the route segment catches it. Wrap sub-sections that may fail independently in an error boundary built on `unstable_catchError` from `next/error`. For `notFound()` use `not-found.tsx`. See `references/pages-suspense.md` for the boundary primitive and placement.
+When a query throws, `error.tsx` at the route segment catches it. Wrap sub-sections that may fail independently in an error boundary built on `catchError` from `next/error`. For `notFound()` use `not-found.tsx`. See `references/pages-suspense.md` for the boundary primitive and placement.

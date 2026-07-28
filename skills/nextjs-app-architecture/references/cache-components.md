@@ -25,16 +25,21 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  partialPrefetching: true,
 };
 
 export default nextConfig;
 ```
+
+Pair `cacheComponents` with [`partialPrefetching: true`](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/partialPrefetching) so links prefetch the static shell — it's also what makes the `io()`-vs-`connection()` prefetch tradeoff below matter. See `references/pages-suspense.md`.
 
 With this flag set:
 
 - **Static shell** — synchronous content, `'use cache'` components, and Suspense fallbacks prerender **at build time**.
 - **Dynamic holes** — async components without `'use cache'` stream in behind `<Suspense>` at request time.
 - **Build constraint** — any async work without `'use cache'` must sit inside `<Suspense>`, or the build fails. Fix it by wrapping the component in `<Suspense>` or adding `'use cache'`.
+
+You don't have to cache anything. A perfectly valid strategy is to enable `cacheComponents` purely for the static shell + streaming, keep every query dynamic (read per request inside `<Suspense>`), and invalidate with `refresh()` — no `'use cache'`, `cacheTag`, or `updateTag` at all. Reach for the caching primitives below only when a specific query is worth caching; `updateTag` becomes relevant only once a query carries a `cacheTag`.
 
 Two things follow from the flag in Next 16. `cacheComponents` **implies Partial Prerendering** — it's the single switch that replaced the old `experimental.ppr`, `experimental.dynamicIO`, and `experimental.useCache` flags, so don't set those. And navigation preserves state via React [`<Activity>`](https://react.dev/reference/react/Activity): a route you leave is hidden rather than unmounted, so its state survives when you return. See [caching](https://preview.nextjs.org/docs/app/getting-started/caching) and [preserving UI state](https://preview.nextjs.org/docs/app/guides/preserving-ui-state).
 
@@ -65,7 +70,7 @@ export const getFeed = cache(async (userId: string) => {
 
 ### `'use cache: private'`
 
-If the query reads cookies, headers, or session data, use [`'use cache: private'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-private) instead. Results are cached only in the user's browser for the session — never stored on the server.
+If the query reads cookies, headers, or session data, use [`'use cache: private'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-private) instead. Results are cached only in the user's browser and don't persist across page reloads — never stored on the server.
 
 ```ts
 export const getNotifications = cache(async () => {
@@ -90,23 +95,23 @@ export const getRepo = cache(async (owner: string, name: string) => {
 });
 ```
 
-### Opting back into dynamic with `connection()`
+### Keeping a synchronous value out of the static shell: `io()`
 
-For a single query that must always run per request, call [`connection()`](https://preview.nextjs.org/docs/app/api-reference/functions/connection) from `next/server` first. The surrounding render becomes dynamic, so the calling component must sit inside a `<Suspense>` boundary:
+**You usually don't need this.** A query that reads `cookies()`/`headers()` or `await`s a DB/`fetch` inside a `<Suspense>` boundary already suspends per request — it stays out of the shell on its own. `io()` is only for reading a *synchronous* request-time source (`new Date()`, `Math.random()`, a sync `sqlite` read) that would otherwise be captured into the shell at build time.
+
+`await` [`io()`](https://preview.nextjs.org/docs/app/api-reference/functions/io) from `next/cache` before that read; it suspends during prerender, so the caller must sit inside `<Suspense>`:
 
 ```ts
-import 'server-only';
+import { io } from 'next/cache';
 
-import { connection } from 'next/server';
-import { cache } from 'react';
-
-export const getUserFavorites = cache(async (userName: string) => {
-  await connection();
-  return db.favorite.findMany({ where: { userName } });
-});
+async function CurrentTime() {
+  await io();
+  const now = new Date(); // without io(), this would bake into the static shell
+  return <time>{now.toLocaleTimeString()}</time>;
+}
 ```
 
-Use it when the data is genuinely per-request and per-user (favorites, draft state, real-time counts) and `'use cache: private'` isn't a fit.
+Prefer `io()` over [`connection()`](https://preview.nextjs.org/docs/app/api-reference/functions/connection) (from `next/server`): both exclude what follows from the shell, but `connection()` blocks prefetches until a real user request, while `io()` stays prefetchable. Reach for `connection()` only when rendering should genuinely wait for a live request.
 
 ## `'use cache'` on components
 
@@ -141,7 +146,7 @@ Don't `'use cache'` on a component that internally calls a `'use cache'`d query 
 ## Invalidation: `updateTag` vs `revalidateTag`
 
 - **[`updateTag(tag)`](https://preview.nextjs.org/docs/app/api-reference/functions/updateTag)** — invalidates immediately and re-renders for read-your-own-writes. Use inside **server actions** when the user expects to see the result.
-- **[`revalidateTag(tag)`](https://preview.nextjs.org/docs/app/api-reference/functions/revalidateTag)** — stale-while-revalidate. Use in **route handlers** (webhooks, cron) where you don't need an immediate UI update.
+- **[`revalidateTag(tag, 'max')`](https://preview.nextjs.org/docs/app/api-reference/functions/revalidateTag)** — stale-while-revalidate. Use in **route handlers** (webhooks, cron) where you don't need an immediate UI update. The `'max'` profile is required for SWR; the single-arg `revalidateTag(tag)` form is deprecated (it expired immediately — use `updateTag` if that's what you want).
 
 ```ts
 'use server';

@@ -129,9 +129,9 @@ Composition crosses the boundary. A client component can accept server-rendered 
 
 `ComposerForm` is `'use client'`. It doesn't know where the avatar JSX came from. The Suspense boundary streams the avatar in without the form re-rendering.
 
-### Server components don't take promises as props
+### Pass server children resolved values, not promises
 
-Pass plain values (strings, IDs, resolved data). When a parent already has the data from its own query, pass it as a prop instead of having the child refetch.
+Prefer passing plain values (strings, IDs, resolved data) to a server child. A server component *can* `await` a promise prop, but resolve it in the parent instead — pass an unresolved promise down only to a *client* component that reads it with `use()` (see above). When a parent already has the data from its own query, pass it as a prop instead of having the child refetch.
 
 ```tsx
 // Right — parent fetches the list, passes each item
@@ -178,7 +178,9 @@ The opinionated bit: name promise props with a `Promise` suffix (`itemsPromise`,
 
 ## Live data via polling
 
-For features that reflect server-side updates without user action (other users posting, new notifications, vote counts changing), drop a `<Poller>` client component into the page that calls [`router.refresh()`](https://preview.nextjs.org/docs/app/api-reference/functions/use-router) on an interval. The router re-renders the server components for the current user; cached queries (if any) return stale data until they expire.
+For features that reflect **server-side** updates without user action (other users posting, new notifications, vote counts changing), drop a `<Poller>` client component into the page that calls [`router.refresh()`](https://preview.nextjs.org/docs/app/api-reference/functions/use-router) on an interval. The router re-renders the server components for the current user; cached queries (if any) return stale data until they expire.
+
+`<Poller>` is only for server-authored data. When the live state is **client-owned** — playback position, an audio player, session/UI state — a client [context provider](https://react.dev/reference/react/createContext) owns it and leaf components read it via a hook (`usePlayer()`); there's no server refetch, so no polling. Reserve `router.refresh()` for changes that happened on the server.
 
 ## Mutations
 

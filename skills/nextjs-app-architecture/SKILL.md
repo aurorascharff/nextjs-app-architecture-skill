@@ -4,107 +4,71 @@ description: Architecture patterns for Next.js 16 App Router apps. Use when scaf
 license: MIT
 metadata:
   author: aurorascharff
-  version: '1.2.0'
+  version: '1.3.0'
 ---
 
 # Next.js App Architecture
 
-Use when building or refactoring Next.js 16+ App Router apps. The skill is organized into focused references — load only the ones relevant to the current task.
+A workflow for building and refactoring Next.js 16+ App Router apps so they follow one consistent, feature-sliced RSC architecture.
 
-## When to read which reference
+**Follow the workflow below step by step** — it produces the invariants by construction. Load the reference a step names for the decision it depends on. Get framework *mechanics* (API signatures, config options, hook contracts) from the linked docs — don't restate or improvise them.
 
-The references are split into two zones. Load only what the task calls for.
+## Invariants (what every change must satisfy)
 
-### Core (load for any RSC Next.js app)
+The non-negotiables. The workflow produces them; the final check verifies them.
 
-| Task                                                                    | Read                            |
-| ----------------------------------------------------------------------- | ------------------------------- |
-| Creating a new feature, deciding folder structure, naming files         | `references/feature-folders.md` |
-| Writing a query or server action, invalidating cached data              | `references/queries-actions.md` |
-| Building a server/client component, designing a skeleton, using `use()` | `references/components.md`      |
-| Composing a page, placing `<Suspense>`, preventing CLS                  | `references/pages-suspense.md`  |
+1. **Pages compose, they never fetch.** A page/layout imports feature components and places `<Suspense>`. No queries, no domain logic, no route-specific components defined inline.
+2. **Pages stay synchronous.** Use `params.then()` / `searchParams.then()`, never `await params` at the top — so chrome paints into the static shell and only data-dependent sections suspend.
+3. **Async server component is the default.** `'use client'` only for hooks, event handlers, or browser APIs — and only on leaves, never on parents of server content.
+4. **The page owns the Suspense boundary; the feature owns the skeleton.** Features never pre-wrap themselves in `<Suspense>`.
+5. **Skeletons live in the same file as the component**, exported alongside it, defined at the end. `Feed` and `FeedSkeleton` are siblings.
+6. **Queries live in `<domain>-queries.ts`** (`import 'server-only'`); **actions live in `<domain>-actions.ts`** (`'use server'`). The file name matches the folder, even for sub-concepts.
+7. **One feature folder per real domain noun.** Sub-concepts (favorite, like, vote, bookmark, search) fold into the parent feature, never their own folder.
+8. **Client components import actions directly** — never receive a server action as a prop just to call it.
 
-### Instant Apps (load only when optimizing for instant-feeling apps)
+## Workflow
 
-These build on the core; they're opt-in opinions, not architecture requirements.
+Run these in order for any feature work. Each step names the reference to consult and the check it must pass.
 
-| Task                                                                                  | Read                             |
-| ------------------------------------------------------------------------------------- | -------------------------------- |
-| Turning on `cacheComponents`, adding `'use cache'` / `cacheTag` / `updateTag`         | `references/cache-components.md` |
-| `useOptimistic` for mutations, toasts, pending state, action-prop pattern, pagination | `references/ux-patterns.md`      |
+1. **Place the work.** Decide the feature folder before writing anything.
+   → `references/feature-folders.md` (decision tree + merge rules).
+   ✓ A real domain, or folded into the right parent.
+2. **Write the query.** `features/<domain>/<domain>-queries.ts`, `import 'server-only'`.
+   → `references/queries-actions.md`; if the data is cacheable, → `references/cache-components.md`.
+   ✓ Server-only; shared reads deduped; returns domain types, not ORM rows.
+3. **Write the action** (if there's a mutation). `features/<domain>/<domain>-actions.ts`, `'use server'` at the top.
+   → `references/queries-actions.md`.
+   ✓ Re-checks auth, validates input, invalidates (`refresh()`, or `updateTag()` once the query is tagged), returns a discriminated union.
+4. **Build the component + skeleton.** `features/<domain>/components/<name>.tsx`: an async server component that awaits its own query; `'use client'` only on interactive leaves.
+   → `references/components.md`.
+   ✓ Skeleton is a sibling export at the end of the file.
+5. **Compose the page.** `app/<route>/page.tsx`: synchronous, `params.then()`, place `<Suspense fallback={<NameSkeleton />}><Name /></Suspense>`, and wrap fallible sections in an error boundary.
+   → `references/pages-suspense.md`.
+   ✓ The page only composes; the boundary lives here, not in the feature.
+6. **Add interaction** (if any): optimistic updates, pending state, toasts, confirmation.
+   → `references/ux-patterns.md`.
+   ✓ Feedback isn't doubled; destructive actions confirm.
+7. **Verify** against the checklist below before declaring done.
 
-Read references **in addition to**, not instead of, this overview. Each one assumes the rules below already apply.
+## Verify before done
 
-## The model
+Inspect the diff against every invariant — each is checkable by reading the changed files:
 
-Next.js 16+ App Router with React Server Components. Three high-level patterns shape everything else:
-
-1. **Feature-sliced layout** — domain folders under `features/`, each owning its queries, actions, and components. Pages in `app/` compose features; they never contain domain logic.
-2. **Async server components by default** — components `await` their own queries directly. Client components (`'use client'`) are leaves, not parents, of the tree.
-3. **Suspense at the page** — the feature exports content + a sibling skeleton. The page imports both and places the `<Suspense>` boundary.
-
-## Decision rules (always apply)
-
-These rules apply to every change. If you violate one, you'll fight the framework later.
-
-- **Pages never fetch data directly.** They compose feature components.
-- **Pages stay synchronous.** Use `params.then()` instead of `await params` so the page chrome above the `.then()` paints immediately and only the data-dependent section suspends. (Required for the static shell when Cache Components is on; still a nice-to-have without it.) See `references/pages-suspense.md`.
-- **Queries live in `<domain>-queries.ts`** with `import 'server-only'` and `cache()` wrapping every export. See `references/queries-actions.md`.
-- **Actions live in `<domain>-actions.ts`** with `'use server'` at the top. The file name matches the folder, even when the mutation targets a sub-concept. See `references/feature-folders.md` and `references/queries-actions.md`.
-- **Async server component is the default.** Add `'use client'` only when you need hooks, event handlers, or browser APIs. See `references/components.md`.
-- **The page owns the Suspense boundary; the feature owns the skeleton.** Don't pre-wrap components in `<Suspense>` inside the feature. See `references/pages-suspense.md`.
-- **Skeletons live in the same file as the component**, defined at the end of the file below the real component(s). `Feed` and `FeedSkeleton` are sibling exports. See `references/components.md`.
-- **Single-use sub-components stay inlined as non-exported functions** in the same file. Exports are for things other files import. See `references/components.md`.
-
-## Decision flow for a new feature
-
-```
-1. Does a feature folder for this domain already exist?
-   → Yes: use it. Don't make a new one.
-   → No: is this a real domain noun, or a sub-concept of an existing one?
-        → Sub-concept (favorite, like, vote, bookmark): fold into the parent feature.
-        → Real domain: create features/<domain>/.
-
-2. Add the query
-   → features/<domain>/<domain>-queries.ts
-   → Wrap in cache(). If using Cache Components, also add 'use cache' + cacheTag.
-   → See references/queries-actions.md (core) and references/cache-components.md (Cache Components).
-
-3. Add the action (if there's a mutation)
-   → features/<domain>/<domain>-actions.ts
-   → 'use server' at the top, validate input, refresh() (or updateTag() with Cache Components) to invalidate.
-
-4. Build the component
-   → features/<domain>/components/<name>.tsx
-   → async server component that awaits its query
-   → Export <Name> and <NameSkeleton> from the same file.
-
-5. Compose the page
-   → app/<route>/page.tsx
-   → Keep the page synchronous, use params.then().
-   → Place <Suspense fallback={<NameSkeleton />}><Name /></Suspense>.
-```
-
-## Pitfalls
-
-- **Passing server actions as props to call them.** Client components import actions directly.
-- **Refetching what the parent already has.** Server components take plain values, not promises. If `<Feed>` queried the list, pass each `post` to `<Post post={post} />`, don't refetch by id.
-- **Inlining route-specific components in the page file.** Extract them into the feature folder. The page should not grow past composition.
-- **Splitting a card and its grid into separate files.** They're always used together. One file, multiple exports.
-- **Making a feature folder for one query, one action, one button.** Fold it into the parent feature.
-- **Using `'use cache'` without `cacheComponents: true`.** They go together. See `references/cache-components.md`.
-- **Wrapping the entire page in a Suspense fallback.** Page chrome paints instantly, only data-dependent sections suspend. See `references/pages-suspense.md`.
+- [ ] No page/layout imports a `*-queries` file or defines a route-specific component inline.
+- [ ] Every page with params is synchronous and uses `params.then()` / `searchParams.then()`.
+- [ ] Every `<Suspense>` for page data sits in the page; no feature pre-wraps itself.
+- [ ] Every component has its `*Skeleton` in the same file, at the end.
+- [ ] Every `*-queries.ts` starts with `import 'server-only'`; every `*-actions.ts` with `'use server'`.
+- [ ] Action files are named `<folder>-actions.ts`; no sub-concept spawned its own folder.
+- [ ] `'use client'` components are leaves — they import actions/hooks/providers, not async server components.
+- [ ] Mutations validate their input and invalidate (`refresh()` or a tag).
 
 ## Reference index
 
-### Core
-
-- **`references/feature-folders.md`** — Folder layout, naming, merging sub-concepts, when a new folder is justified, action/query file naming.
-- **`references/queries-actions.md`** — Server-only queries, `cache()` for dedup, server actions, validation, `refresh()` for invalidation.
-- **`references/components.md`** — Async server components, skeletons, client boundary, promise + `use()` pattern, single-use helpers, polling for live data.
-- **`references/pages-suspense.md`** — Page composition, `PageProps` / `LayoutProps`, `params.then()`, Suspense placement rules, CLS prevention, error boundaries, layout-level Suspense.
-
-### Instant Apps (opt-in)
-
-- **`references/cache-components.md`** — `cacheComponents: true` model, the static shell, `'use cache'` / `'use cache: private'` / `'use cache: remote'`, `cacheTag` / `cacheLife` strategy, `updateTag` / `revalidateTag` invalidation, `connection()` escape hatch, build constraints.
-- **`references/ux-patterns.md`** — `useOptimistic` for mutations, toasts, pending state via `data-pending`, destructive action flows, the action-prop pattern, URL pagination, `useFormStatus`.
+- **`references/feature-folders.md`** — where code goes: folder layout, naming, merging sub-concepts.
+- **`references/queries-actions.md`** — query/action rules: server-only, dedup, validation, invalidation, return shape.
+- **`references/components.md`** — server/client boundary, skeletons, `use()`, single-use helpers, live data.
+- **`references/pages-suspense.md`** — page composition, `params.then()`, Suspense placement, CLS, error boundaries, prefetch.
+- **`references/cache-components.md`** — the `cacheComponents` decisions: whether to cache, which directive, how to invalidate.
+- **`references/ux-patterns.md`** — interaction decisions: optimistic vs pending vs inline error, toasts, action-prop, confirmations.
+- **`references/example.md`** — the next-beats reference app: invariant → file map, for seeing any rule in real code.

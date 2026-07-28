@@ -11,6 +11,6 @@
     "https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/cacheLife",
     "https://preview.nextjs.org/docs/app/api-reference/functions/updateTag",
     "https://preview.nextjs.org/docs/app/guides/adopting-partial-prefetching",
-    "https://github.com/vercel/next.js/pull/94020"
+    "https://preview.nextjs.org/docs/app/guides/interactive-apps"
   ]
 }
