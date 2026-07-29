@@ -9,6 +9,9 @@ features/<domain>/
   <domain>-queries.ts   # Server-only queries
   <domain>-actions.ts   # Server actions
   components/           # Server + client components, each with its skeleton
+  types/                # Feature-local public types, when needed by multiple files
+  hooks/                # Feature-local client hooks, when not shared across features
+  providers/            # Feature-local providers, only when the provider belongs to this domain
 ```
 
 The folder name **is** the domain. The query and action filenames match the folder.
@@ -52,8 +55,30 @@ features/event/
 
 - `<folder>-queries.ts` — even if the file has only one query.
 - `<folder>-actions.ts` — even if a mutation is about a sub-concept.
-- Other `<folder>-*.ts` files are fine when the folder needs them (`playlist-constants.ts`, `<folder>-schema.ts`), as long as they keep the folder-name prefix.
+- Other `<folder>-*.ts` files are fine when the folder needs them (`playlist-constants.ts`, `<folder>-schema.ts`), as long as they keep the folder-name prefix. Don't put reusable domain types in a root `*-types.ts` file; use `features/<domain>/types/` once a type is imported by multiple files.
 - Component files use any descriptive name. The component (not the feature) is the unit here.
+
+## Local vs shared support folders
+
+Use a local support folder when the code belongs to one feature:
+
+```
+features/message/
+  types/
+    message.ts
+  hooks/
+    use-message-draft.ts
+  providers/
+    message-draft-provider.tsx
+```
+
+Promote only when there are real cross-feature consumers:
+
+- `types/` at the project root — shared domain/application types imported across features.
+- `hooks/` at the project root — shared client hooks used across features.
+- `app/providers.tsx` or `components/*-provider.tsx` — app-shell providers that wrap the whole app.
+
+Avoid root-level miscellany like `message-types.ts`, `shared-hooks.ts`, or `common-provider.tsx`; the folder name should explain the scope.
 
 ## What goes in `components/`
 
@@ -92,11 +117,11 @@ app/                  # Pages and layouts
 features/             # Domain folders
 components/           # UI primitives, theme, and app-shell singletons
 hooks/                # Shared client hooks used across features
-types/                # Domain types (optional — co-located is also fine)
+types/                # Shared cross-feature types only
 lib/                  # Utilities and cohesive non-domain subsystems
 ```
 
-`lib/` holds flat helpers (`db.ts`, `utils.ts`) but may also group a cohesive non-domain subsystem in its own subfolder (e.g. `lib/audio/` for an audio engine). Cross-feature client hooks live in top-level `hooks/`; a hook used by a single feature can co-locate in that feature.
+`lib/` holds flat helpers (`db.ts`, `utils.ts`) but may also group a cohesive non-domain subsystem in its own subfolder (e.g. `lib/audio/` for an audio engine). Cross-feature client hooks live in top-level `hooks/`; a hook used by a single feature co-locates in that feature's `hooks/`. Types follow the same rule: shared types at top-level `types/`, feature-only exported types in `features/<domain>/types/`.
 
 `components/` holds:
 

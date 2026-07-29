@@ -111,4 +111,4 @@ function toPost(row: PostRow & { author: UserRow }): Post {
 }
 ```
 
-Components see `Post`, not the ORM row. Where the `Post` type lives (a `types/` folder, co-located with the query, etc.) is a project convention — set it in `AGENTS.md`.
+Components see `Post`, not the ORM row. If that type is imported by multiple files in the feature, put it under `features/<domain>/types/` (for example `features/post/types/post.ts`). Promote it to top-level `types/` only when multiple features import it.

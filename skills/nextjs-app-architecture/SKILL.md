@@ -4,14 +4,14 @@ description: Build or audit Next.js 16 App Router apps using a next-beats-style 
 license: MIT
 metadata:
   author: aurorascharff
-  version: '1.3.5'
+  version: "1.3.6"
 ---
 
 # Next.js App Architecture
 
 A workflow for building and auditing Next.js 16+ App Router apps so they follow one consistent, feature-sliced RSC architecture like `next-beats`.
 
-**Follow the workflow below step by step** — it produces the invariants by construction. Load the reference a step names for the decision it depends on. Get framework *mechanics* (API signatures, config options, hook contracts) from the linked docs — don't restate or improvise them.
+**Follow the workflow below step by step** — it produces the invariants by construction. Load the reference a step names for the decision it depends on. Get framework _mechanics_ (API signatures, config options, hook contracts) from the linked docs — don't restate or improvise them.
 
 ## Prerequisite
 
@@ -47,8 +47,8 @@ Run these in order for build-from-scratch, feature work, or audits. Each step na
 1. **Choose mode.**
    - **Build from scratch:** sketch routes, real domain nouns, static shell, and expected loading groups before writing code.
    - **Audit/refactor:** scan current `app/` pages first; list every async page, page-level query import, route prop leak, missing Suspense boundary, and feature folder mismatch.
-   → `references/example.md` for the target shape; `references/feature-folders.md` for placement.
-   ✓ You know whether you are creating the architecture or converting loader-shaped code into it.
+     → `references/example.md` for the target shape; `references/feature-folders.md` for placement.
+     ✓ You know whether you are creating the architecture or converting loader-shaped code into it.
 2. **Place the work.** Decide the feature folder before writing anything.
    → `references/feature-folders.md` (decision tree + merge rules).
    ✓ A real domain, or folded into the right parent.
