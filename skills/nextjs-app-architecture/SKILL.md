@@ -59,7 +59,7 @@ Run these in order for build-from-scratch, feature work, or audits. Each step na
    → `references/queries-actions.md`.
    ✓ Re-checks auth, validates input, invalidates matching cache tags under Cache Components (`refresh()` only for justified dynamic reads), returns a discriminated union.
 5. **Build the component + skeleton.** `features/<domain>/components/<name>.tsx`: an async server component that awaits its own query from minimal props; `'use client'` only on interactive leaves.
-   → `references/components.md`.
+   → `references/components.md` (for a client data library like SWR or TanStack Query, or a strict-SPA/CSR feature, this reference points to the [Single-page applications guide](https://preview.nextjs.org/docs/app/guides/single-page-applications)).
    ✓ Component receives IDs/handles/parsed filters or already-resolved records, not `params`; skeleton is a sibling export at the end; no alias skeleton wrappers.
 6. **Compose the page.** `app/<route>/page.tsx`: synchronous, `params.then()`, place `<Suspense fallback={<NameSkeleton />}><Name /></Suspense>`, and wrap fallible sections in an error boundary.
    → `references/pages-suspense.md`.
