@@ -8,9 +8,10 @@ How to organize code under `features/` and `app/`.
 features/<domain>/
   <domain>-queries.ts   # Server-only queries
   <domain>-actions.ts   # Server actions
+  <domain>-query-options.ts # Client data-library query keys/options, when needed
   components/           # Server + client components, each with its skeleton
   types/                # Feature-local public types, when needed by multiple files
-  hooks/                # Feature-local client hooks, when not shared across features
+  hooks/                # Actual feature-local React hooks and hook wrappers
   providers/            # Feature-local providers, only when the provider belongs to this domain
 ```
 
@@ -64,13 +65,23 @@ Use a local support folder when the code belongs to one feature:
 
 ```
 features/message/
+  message-query-options.ts
   types/
     message.ts
   hooks/
+    message-mutations.ts
     use-message-draft.ts
   providers/
     message-draft-provider.tsx
 ```
+
+Feature-owned client coordination stays with the feature, but **`hooks/` is not the umbrella concept**:
+
+- Query keys/options for client data libraries live at the feature root (`message-query-options.ts`, `channel-query-options.ts`) because they are not React hooks.
+- Mutation hooks that wrap server actions or route handlers with optimistic updates live in `hooks/` (`message-mutations.ts` exporting `useSendMessage`).
+- Browser-only state helpers live in `hooks/` when they are actual hooks (`use-thread.ts`, `use-message-draft.ts`).
+
+Keep the file prefix aligned with the feature folder when a file exports a grouped feature contract (`workspace-query-options.ts`, not `activity-query-options.ts` in `features/workspace/`). Support code for a sub-concept still lives with the parent feature: reactions on messages belong in `features/message/`; unread activity chrome belongs in `features/workspace/`.
 
 Promote only when there are real cross-feature consumers:
 
@@ -128,6 +139,6 @@ lib/                  # Utilities and cohesive non-domain subsystems
 - **`components/ui/`** — primitives. Low-level building blocks and action-prop components.
 - **`components/theme/`** — theme provider and toggle, paired.
 - **Top-level files** (`site-header.tsx`, `auth-gate.tsx`, `poller.tsx`) — app-shell singletons used once each. No `common/` folder — "common" is not a category. If a component is used everywhere it's a primitive (→ `ui/`); if it's used once it lives at the top level.
-- **Purpose-named subfolders** are fine when several files share a clear technical role — e.g. `components/scripts/` for pre-hydration inline `<script>` seed components. This is distinct from the rejected `common/`: a `scripts/` folder names *what the files are*, not "miscellaneous."
+- **Purpose-named subfolders** are fine when several files share a clear technical role — e.g. `components/scripts/` for pre-hydration inline `<script>` seed components. This is distinct from the rejected `common/`: a `scripts/` folder names _what the files are_, not "miscellaneous."
 
 Conventions for filenames and casing live in the project's `AGENTS.md`. This skill doesn't impose one.

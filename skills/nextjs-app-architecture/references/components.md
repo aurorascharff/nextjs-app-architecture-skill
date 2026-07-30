@@ -10,7 +10,7 @@ Prefer minimal, stable props: IDs, slugs, handles, parsed filters, or records th
 
 ```tsx
 // features/notifications/components/notifications-badge.tsx
-import { getUnreadNotificationCount } from '@/features/notifications/notifications-queries';
+import { getUnreadNotificationCount } from "@/features/notifications/notifications-queries";
 
 export async function NotificationsBadge() {
   const count = await getUnreadNotificationCount();
@@ -49,7 +49,7 @@ export async function Feed({ userId }: { userId: string }) {
   const posts = await getFeed(userId);
   return (
     <ul>
-      {posts.map(p => (
+      {posts.map((p) => (
         <Post key={p.id} post={p} />
       ))}
     </ul>
@@ -129,7 +129,10 @@ If the component needs interactive pieces, keep the server component as the pare
 
 ```tsx
 async function PostDetail({ id }: { id: string }) {
-  const [post, userState] = await Promise.all([getPost(id), getPostUserState(id)]);
+  const [post, userState] = await Promise.all([
+    getPost(id),
+    getPostUserState(id),
+  ]);
   return (
     <article>
       <PostBody body={post.body} />
@@ -157,13 +160,13 @@ Composition crosses the boundary. A client component can accept server-rendered 
 
 ### Pass server children resolved values, not promises
 
-Prefer passing plain values (strings, IDs, resolved data) to a server child. A server component *can* `await` a promise prop, but resolve route promises in the page instead — pass an unresolved promise down only to a *client* component that reads it with `use()` (see below). When a parent already has the data from its own query, pass it as a prop instead of having the child refetch.
+Prefer passing plain values (strings, IDs, resolved data) to a server child. A server component _can_ `await` a promise prop, but resolve route promises in the page instead — pass an unresolved promise down only to a _client_ component that reads it with `use()` (see below). When a parent already has the data from its own query, pass it as a prop instead of having the child refetch.
 
 ```tsx
 // Right — parent fetches the list, passes each item
 async function Feed({ userId }: { userId: string }) {
   const posts = await getFeed(userId);
-  return posts.map(post => <Post key={post.id} post={post} />);
+  return posts.map((post) => <Post key={post.id} post={post} />);
 }
 
 async function Post({ post }: { post: Post }) {
@@ -191,8 +194,8 @@ When a client component needs server data but should manage its own loading (a s
 ```
 
 ```tsx
-'use client';
-import { use } from 'react';
+"use client";
+import { use } from "react";
 
 export function TagPicker({ itemsPromise }: { itemsPromise: Promise<Tag[]> }) {
   const items = use(itemsPromise);
@@ -205,6 +208,8 @@ The opinionated bit: name promise props with a `Promise` suffix (`itemsPromise`,
 ### Client data libraries (SWR, TanStack Query)
 
 When a client component needs a data library for client-side features (focus/interval revalidation, polling, `mutate`/`invalidateQueries`, request dedup), seed its cache from the server instead of moving all fetching to the client: fetch in a Server Component, hand the cache to the client, and let the library own revalidation. The client's `queryFn`/`fetcher` reads an [API route](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route) (a GET that runs on client and server), never a Server Function (a sequential POST for mutations). Under Cache Components, TanStack's `dehydrate()` reads `Date.now()`, so wrap the seed helper in `'use cache'`.
+
+Keep the client-library contract with the owning feature, but don't treat `hooks/` as the general bucket. Query keys/options belong at the feature root as `<domain>-query-options.ts`; mutation wrappers that export `use*` hooks belong in `features/<domain>/hooks/`; cache update helpers can stay next to the hook or query-options file they support. If two features need the same live badge or query key, first ask whether it really belongs to a shared parent feature (for example workspace chrome) before promoting it to a top-level client-support folder.
 
 For the full SWR and TanStack Query patterns (server seeding, dynamic keys, `preload`, and the Cache Components `dehydrate()` shape), see the [Single-page applications guide](https://preview.nextjs.org/docs/app/guides/single-page-applications). Prefer the plain `use(promise)` pattern above when the data is read once and never revalidates on the client — don't add a data library for that.
 
