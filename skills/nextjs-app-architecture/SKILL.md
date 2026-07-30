@@ -39,7 +39,7 @@ The non-negotiables. The workflow produces them; the final check verifies them.
 7. **Queries live in `<domain>-queries.ts`** (`import 'server-only'`); **actions live in `<domain>-actions.ts`** (`'use server'`). The file name matches the folder, even for sub-concepts.
 8. **One feature folder per real domain noun.** Sub-concepts (favorite, like, vote, bookmark, search) fold into the parent feature, never their own folder.
 9. **Client components import actions directly** — never receive a server action as a prop just to call it.
-10. **Feature-local client coordination stays with its domain.** Query keys/options live as `<domain>-query-options.ts`; actual React hooks and hook wrappers live in `features/<domain>/hooks/`; shared client support is only promoted after cross-feature reuse.
+10. **Feature-local client coordination stays with its domain.** Put each client-support file where its API shape fits: query keys/options at the feature root, hook wrappers in `hooks/`, and tiny leaf components in `components/`; promote support code only after real cross-feature reuse.
 
 ## Workflow
 
@@ -83,7 +83,7 @@ Inspect the diff against every invariant — each is checkable by reading the ch
 - [ ] With `cacheComponents: true`, reusable reads use `'use cache'` / `cacheTag` / `cacheLife`, or `'use cache: private'` / `'use cache: remote'` when appropriate; any dynamic read is intentional and justified.
 - [ ] Mutations touching cached reads call `updateTag()` / `revalidateTag(..., 'max')` for the matching tags; `refresh()` is not a substitute for tag invalidation.
 - [ ] Action files are named `<folder>-actions.ts`; no sub-concept spawned its own folder.
-- [ ] Feature-local query keys/options live as `<domain>-query-options.ts`; actual hooks and hook wrappers live in `features/<domain>/hooks/`; shared client support is only promoted after cross-feature reuse.
+- [ ] Feature-local client-support files sit in the smallest fitting place: query keys/options at the feature root, hook wrappers in `hooks/`, leaf components in `components/`, and shared support only after real cross-feature reuse.
 - [ ] `'use client'` components are leaves — they import actions/hooks/providers, not async server components.
 - [ ] Mutations validate their input and invalidate the affected data.
 

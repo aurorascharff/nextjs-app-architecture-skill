@@ -75,13 +75,14 @@ features/message/
     message-draft-provider.tsx
 ```
 
-Feature-owned client coordination stays with the feature, but **`hooks/` is not the umbrella concept**:
+Feature-owned client coordination stays with the feature. Place each file by the shape it exports and the domain it belongs to:
 
-- Query keys/options for client data libraries live at the feature root (`message-query-options.ts`, `channel-query-options.ts`) because they are not React hooks.
-- Mutation hooks that wrap server actions or route handlers with optimistic updates live in `hooks/` (`message-mutations.ts` exporting `useSendMessage`).
-- Browser-only state helpers live in `hooks/` when they are actual hooks (`use-thread.ts`, `use-message-draft.ts`).
+- Query keys/options for client data libraries live at the feature root (`message-query-options.ts`, `channel-query-options.ts`, `workspace-query-options.ts`).
+- Mutation wrappers that export `use*` hooks live in `hooks/` (`message-mutations.ts` exporting `useSendMessage`).
+- Browser-only state helpers live in `hooks/` when their public API is a hook (`use-thread.ts`, `use-message-draft.ts`).
+- Client leaf components that coordinate a server write live in `components/` next to the UI they support (`mark-activity-read.tsx` posts read activity in the background while the current `/activity` tree stays stable).
 
-Keep the file prefix aligned with the feature folder when a file exports a grouped feature contract (`workspace-query-options.ts`, not `activity-query-options.ts` in `features/workspace/`). Support code for a sub-concept still lives with the parent feature: reactions on messages belong in `features/message/`; unread activity chrome belongs in `features/workspace/`.
+Keep the file prefix aligned with the feature folder when a file exports a grouped feature contract (`workspace-query-options.ts`, not `activity-query-options.ts` in `features/workspace/`). Support code for a sub-concept still lives with the parent feature: reactions on messages belong in `features/message/`; unread activity chrome belongs in `features/workspace/`. In the messaging patch, reaction source labels stayed with message rendering, while Activity read state stayed with workspace chrome.
 
 Promote only when there are real cross-feature consumers:
 
