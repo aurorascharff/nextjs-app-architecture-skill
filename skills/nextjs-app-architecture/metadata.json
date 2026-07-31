@@ -1,5 +1,5 @@
 {
-  "version": "1.3.6",
+  "version": "1.3.7",
   "organization": "Aurora Scharff",
   "date": "July 2026",
   "abstract": "Build and audit Next.js 16 App Router apps with a next-beats-style RSC architecture: synchronous pages that compose static shells, Suspense, and error boundaries; feature-owned async server components that receive IDs or parsed values; co-located skeletons; server-only queries; server actions; enforced Cache Components practice when enabled; and build/runtime verification of the resulting loading shape. References cover each topic in depth so the agent only loads what's needed for the task.",

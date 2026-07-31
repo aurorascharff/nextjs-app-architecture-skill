@@ -207,17 +207,7 @@ The opinionated bit: name promise props with a `Promise` suffix (`itemsPromise`,
 
 ### Client data libraries (SWR, TanStack Query)
 
-When a client component needs a data library for client-side features (focus/interval revalidation, polling, `mutate`/`invalidateQueries`, request dedup), seed its cache from the server instead of moving all fetching to the client: fetch in a Server Component, hand the cache to the client, and let the library own revalidation. The client's `queryFn`/`fetcher` reads an [API route](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route) (a GET that runs on client and server), never a Server Function (a sequential POST for mutations). Under Cache Components, TanStack's `dehydrate()` reads `Date.now()`, so wrap the seed helper in `'use cache'`.
-
-Keep the client-library contract with the owning feature, and place support files by the API they expose. Query keys/options belong at the feature root as `<domain>-query-options.ts`; mutation wrappers that export `use*` hooks belong in `features/<domain>/hooks/`; client leaf components that run effects belong in `components/`; cache update helpers can stay next to the hook or query-options file they support. For example, unread Activity badge keys belong in `features/workspace/workspace-query-options.ts`, while a `MarkActivityRead` effect component belongs in `features/workspace/components/`. If two features need the same live badge or query key, first ask whether it really belongs to a shared parent feature (for example workspace chrome) before promoting it to a top-level client-support folder.
-
-For the full SWR and TanStack Query patterns (server seeding, dynamic keys, `preload`, and the Cache Components `dehydrate()` shape), see the [Single-page applications guide](https://preview.nextjs.org/docs/app/guides/single-page-applications). Prefer the plain `use(promise)` pattern above when the data is read once and never revalidates on the client — don't add a data library for that.
-
-## Live data via polling
-
-For features that reflect **server-side** updates without user action (other users posting, new notifications, vote counts changing), drop a `<Poller>` client component into the page that calls [`router.refresh()`](https://preview.nextjs.org/docs/app/api-reference/functions/use-router) on an interval. The router re-renders the server components for the current user; cached queries (if any) return stale data until they expire.
-
-`<Poller>` is only for server-authored data. When the live state is **client-owned** — playback position, an audio player, session/UI state — a client [context provider](https://react.dev/reference/react/createContext) owns it and leaf components read it via a hook (`usePlayer()`); there's no server refetch, so no polling. Reserve `router.refresh()` for changes that happened on the server.
+Follow `references/single-page-applications.md` when a feature uses a browser data cache or needs externally authored updates. It covers when to use a library, where its files live, server seeding, Cache Components coordination, hydration, and mutations.
 
 ## Mutations
 

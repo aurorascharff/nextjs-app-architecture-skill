@@ -57,6 +57,10 @@ Prefer `io()` over [`connection()`](https://preview.nextjs.org/docs/app/api-refe
 
 Tag, cache, invalidate: the `cacheTag` in the query and the `updateTag` in the action use the same string and live in the same feature folder.
 
+## Coordinate hydrated client data
+
+When cached server data seeds SWR, TanStack Query, or another browser cache, follow `references/single-page-applications.md`. Server and client freshness policies are independent; hydration adds library-specific constraints.
+
 ## Build failure map
 
 When `next build` fails under Cache Components, map the error back to an architecture rule instead of patching locally:

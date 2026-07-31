@@ -4,7 +4,7 @@ description: Build or audit Next.js 16 App Router apps using a next-beats-style 
 license: MIT
 metadata:
   author: aurorascharff
-  version: "1.3.6"
+  version: "1.3.7"
 ---
 
 # Next.js App Architecture
@@ -24,6 +24,7 @@ Build pages that describe the loading experience, not pages that act like route 
 - `app/**/page.tsx` and `layout.tsx` are synchronous composition surfaces: static chrome, section headings, `<Suspense>` boundaries, error boundaries, and transition wrappers.
 - Feature components own their reads on the server. They receive minimal stable inputs (`id`, `slug`, `handle`, parsed filter values) or already-fetched records, never raw `params` / `searchParams`.
 - Queries and actions live in the feature folder. Components import queries; client leaves import actions directly.
+- When server tags and client query keys describe the same feature data, a pure feature-local cache contract owns those identities.
 - Skeletons mirror the component tree and live beside the component they represent.
 
 ## Invariants (what every change must satisfy)
@@ -39,7 +40,7 @@ The non-negotiables. The workflow produces them; the final check verifies them.
 7. **Queries live in `<domain>-queries.ts`** (`import 'server-only'`); **actions live in `<domain>-actions.ts`** (`'use server'`). The file name matches the folder, even for sub-concepts.
 8. **One feature folder per real domain noun.** Sub-concepts (favorite, like, vote, bookmark, search) fold into the parent feature, never their own folder.
 9. **Client components import actions directly** — never receive a server action as a prop just to call it.
-10. **Feature-local client coordination stays with its domain.** Put each client-support file where its API shape fits: query keys/options at the feature root, hook wrappers in `hooks/`, and tiny leaf components in `components/`; promote support code only after real cross-feature reuse.
+10. **Feature-local cache coordination stays with its domain.** Put pure tags/keys in `<domain>-cache.ts`, client query definitions in `<domain>-query-options.ts`, hook wrappers in `hooks/use-*.ts`, and tiny client leaves in `components/`; promote support code only after real cross-feature reuse.
 
 ## Workflow
 
@@ -53,14 +54,14 @@ Run these in order for build-from-scratch, feature work, or audits. Each step na
 2. **Place the work.** Decide the feature folder before writing anything.
    → `references/feature-folders.md` (decision tree + merge rules).
    ✓ A real domain, or folded into the right parent.
-3. **Write the query.** `features/<domain>/<domain>-queries.ts`, `import 'server-only'`.
-   → `references/queries-actions.md`; with `cacheComponents: true`, also → `references/cache-components.md`.
-   ✓ Server-only; reusable reads cached/tagged/lifetimed under Cache Components; React `cache()` only for proven same-request dedup; returns domain types, not ORM rows.
+3. **Write the query and, when a client cache shares its data, the cache contract.** Put server reads in `<domain>-queries.ts` with `import 'server-only'`; keep shared tag/key identities in a pure `<domain>-cache.ts`.
+   → `references/queries-actions.md`; for SWR/TanStack Query → `references/single-page-applications.md`; with `cacheComponents: true`, also → `references/cache-components.md`.
+   ✓ Cache identities are defined once; server reads are server-only, cached/tagged/lifetimed under Cache Components, and return domain types rather than ORM rows.
 4. **Write the action** (if there's a mutation). `features/<domain>/<domain>-actions.ts`, `'use server'` at the top.
    → `references/queries-actions.md`.
    ✓ Re-checks auth, validates input, invalidates matching cache tags under Cache Components (`refresh()` only for justified dynamic reads), returns a discriminated union.
 5. **Build the component + skeleton.** `features/<domain>/components/<name>.tsx`: an async server component that awaits its own query from minimal props; `'use client'` only on interactive leaves.
-   → `references/components.md` (for a client data library like SWR or TanStack Query, or a strict-SPA/CSR feature, this reference points to the [Single-page applications guide](https://preview.nextjs.org/docs/app/guides/single-page-applications)).
+   → `references/components.md`; for a client data library or strict-SPA/CSR feature → `references/single-page-applications.md`.
    ✓ Component receives IDs/handles/parsed filters or already-resolved records, not `params`; skeleton is a sibling export at the end; no alias skeleton wrappers.
 6. **Compose the page.** `app/<route>/page.tsx`: synchronous, `params.then()`, place `<Suspense fallback={<NameSkeleton />}><Name /></Suspense>`, and wrap fallible sections in an error boundary.
    → `references/pages-suspense.md`.
@@ -83,16 +84,18 @@ Inspect the diff against every invariant — each is checkable by reading the ch
 - [ ] With `cacheComponents: true`, reusable reads use `'use cache'` / `cacheTag` / `cacheLife`, or `'use cache: private'` / `'use cache: remote'` when appropriate; any dynamic read is intentional and justified.
 - [ ] Mutations touching cached reads call `updateTag()` / `revalidateTag(..., 'max')` for the matching tags; `refresh()` is not a substitute for tag invalidation.
 - [ ] Action files are named `<folder>-actions.ts`; no sub-concept spawned its own folder.
-- [ ] Feature-local client-support files sit in the smallest fitting place: query keys/options at the feature root, hook wrappers in `hooks/`, leaf components in `components/`, and shared support only after real cross-feature reuse.
+- [ ] Features with both server tags and client query keys define them once in a pure `<domain>-cache.ts`; queries, actions, hydration, query options, and hooks import from it.
+- [ ] Feature-local client-support files sit in the smallest fitting place: query options at the feature root, `use-*` hook wrappers in `hooks/`, leaf components in `components/`, and shared support only after real cross-feature reuse.
 - [ ] `'use client'` components are leaves — they import actions/hooks/providers, not async server components.
 - [ ] Mutations validate their input and invalidate the affected data.
 
 ## Reference index
 
-- **`references/feature-folders.md`** — where code goes: folder layout, naming, merging sub-concepts.
+- **`references/feature-folders.md`** — where code goes: folder layout, cache contracts, naming, and merging sub-concepts.
 - **`references/queries-actions.md`** — query/action rules: server-only, dedup, validation, invalidation, return shape.
 - **`references/components.md`** — server/client boundary, skeletons, `use()`, single-use helpers, live data.
 - **`references/pages-suspense.md`** — page composition, `params.then()`, Suspense placement, CLS, error boundaries, prefetch.
 - **`references/cache-components.md`** — the `cacheComponents` decisions: which reads to cache, which directive to use, how to invalidate.
+- **`references/single-page-applications.md`** — client cache decisions: placement, server seeding, Cache Components coordination, hydration, and mutations.
 - **`references/ux-patterns.md`** — interaction decisions: optimistic vs pending vs inline error, toasts, action-prop, confirmations.
 - **`references/example.md`** — the next-beats reference app: invariant → file map, for seeing any rule in real code.

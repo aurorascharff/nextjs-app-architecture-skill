@@ -4,6 +4,10 @@ The data layer. Every feature has both: queries to read, actions to write.
 
 This page covers the universal data layer that applies to every Next.js App Router app. When `cacheComponents: true` is enabled, follow `references/cache-components.md`: reusable reads are cached/tagged/lifetimed, and mutations update matching tags.
 
+## Cache identities
+
+When a server read also seeds a browser data cache, follow `references/single-page-applications.md` for the feature-local cache contract and client-library placement.
+
 ## Queries
 
 Create `features/<domain>/<domain>-queries.ts`. Mark it `import 'server-only'` — that's the invariant. Default to plain async exports.
