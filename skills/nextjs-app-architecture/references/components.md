@@ -224,16 +224,16 @@ Avoid effects whose only job is to copy React state to React state:
 ```tsx
 // Wrong — derived React state cascades through an effect
 useEffect(() => {
-  setSelectedSlot(null);
-}, [day]);
+  setSelectedItem(null);
+}, [filterKey]);
 ```
 
 Prefer one of these shapes:
 
-- Key the interactive child by the value that resets it: `<BookingSlots key={day} day={day} />`.
+- Key the interactive child by the value that resets it: `<SelectableList key={filterKey} filterKey={filterKey} />`.
 - Derive the value during render.
 - Put the value in the URL/search params if navigation should own it.
-- Use a reducer where the same event that changes `day` also clears `selectedSlot`.
+- Use a reducer where the same event that changes `filterKey` also clears `selectedItem`.
 
 Effects are for external systems: DOM APIs, subscriptions, timers, browser storage, analytics, or imperative libraries. They are not a cleanup lane for state that React could derive or reset structurally.
 

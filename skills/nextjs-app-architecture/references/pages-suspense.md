@@ -111,20 +111,22 @@ If a page uses a transition wrapper (e.g. `<ViewTransition>`), place it in the p
 Before designing a fallback, identify what is stable and what is data-dependent.
 
 - Stable: card/panel border, padding, icon, label, section heading, fixed action rail.
-- Data-dependent: title text, counts, form body, list rows, availability slots.
+- Data-dependent: title text, counts, form body, list rows, loaded choices.
 - Rule: stable shell outside Suspense; skeleton/crossfade inside the shell around the data body.
 
 ```tsx
-<BookingSettingsCard>
-  <Suspense fallback={<BookingSettingsSkeleton />}>
+<FeaturePanel>
+  <Suspense fallback={<FeaturePanelBodySkeleton />}>
     <Crossfade>
-      <BookingSettings handle={handle} />
+      <FeaturePanelBody id={id} />
     </Crossfade>
   </Suspense>
-</BookingSettingsCard>
+</FeaturePanel>
 ```
 
-Do not render `<BookingSettingsCard>` in both `fallback` and final content. That duplicates layout responsibility and makes the skeleton guess the card size.
+Do not render `<FeaturePanel>` in both `fallback` and final content. That duplicates layout responsibility and makes the skeleton guess the panel size.
+
+Use the app's real domain noun at implementation time (`PostPanel`, `MessageList`, `GroupEditor`, `EventDetails`, etc.); the neutral names here describe the reusable shape, not a component to copy literally.
 
 When the top data section has unknown final height and pushes the sections below, either reserve that height in the stable wrapper or group the affected sections in one boundary. Do not create two independent crossfades if the first one changes the second one's starting position.
 
@@ -153,7 +155,7 @@ export default function LoginPage() {
 
 async function LoginRedirect() {
   await connection();
-  await redirectIfAuthenticated('/calendar');
+  await redirectIfAuthenticated('/dashboard');
   return <LoginForm />;
 }
 ```
