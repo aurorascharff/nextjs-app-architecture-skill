@@ -217,7 +217,7 @@ Keep the server/client split even when the UI is highly interactive:
 - The client leaf owns only ephemeral interaction: open state, focused field, pending flag, optimistic draft, selected tab that is not shareable.
 - Shareable or bookmarkable state lives in the URL/search params, not mirrored in component state.
 - Client leaves import server actions directly and call them from form actions or event handlers.
-- Optimistic collections use `useOptimistic` with a reducer/action object, not scattered arrays of pending IDs in several components.
+- Mutation feedback (`useOptimistic`, pending flags, rollback, toasts) follows `references/ux-patterns.md`.
 
 Avoid effects whose only job is to copy React state to React state:
 
