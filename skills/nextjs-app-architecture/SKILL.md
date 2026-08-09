@@ -25,22 +25,23 @@ Build pages that describe the loading experience, not pages that act like route 
 - Feature components own their reads on the server. They receive minimal stable inputs (`id`, `slug`, `handle`, parsed filter values) or already-fetched records, never raw `params` / `searchParams`.
 - Queries and actions live in the feature folder. Components import queries; client leaves import actions directly.
 - When server tags and client query keys describe the same feature data, a pure feature-local cache contract owns those identities.
-- Skeletons mirror the component tree and live beside the component they represent.
+- Stable chrome, wrappers, and skeletons preserve layout: cards/panels stay outside Suspense, and fallbacks swap only the data-dependent body.
 
 ## Invariants (what every change must satisfy)
 
 The non-negotiables. The workflow produces them; the final check verifies them.
 
-1. **Pages compose, they never fetch.** A page/layout imports feature components and places `<Suspense>`. No queries, no domain logic, no route-specific components defined inline.
-2. **Pages stay synchronous.** Use `params.then()` / `searchParams.then()`, never `await params` at the top — so chrome paints into the static shell and only data-dependent sections suspend.
+1. **Pages compose, they never fetch.** A page/layout imports feature components and places `<Suspense>`. No queries or domain logic inline. Tiny route-local control-flow helpers are allowed only when they exist to place a boundary around `connection()`, `redirect()`, or a resolved route prop.
+2. **Pages stay synchronous.** Use `params.then()` / `searchParams.then()` or `Promise.all([params, searchParams]).then(...)`, never `await params` at the top — so chrome paints into the static shell and only data-dependent sections suspend.
 3. **Feature components receive IDs, not route props.** Resolve `params` / `searchParams` at the page boundary and pass plain values (`id`, `slug`, `query`) into features.
 4. **Async server component is the default.** `'use client'` only for hooks, event handlers, or browser APIs — and only on leaves, never on parents of server content.
-5. **The page owns the Suspense boundary; the feature owns the skeleton.** Features never pre-wrap themselves in `<Suspense>`.
+5. **The page owns the Suspense boundary; the feature owns the skeleton.** Features never pre-wrap themselves in `<Suspense>`; stable wrappers/cards/chrome wrap the boundary instead of being duplicated in fallback and final content.
 6. **Skeletons live in the same file as the component**, exported alongside it, defined at the end. `Feed` and `FeedSkeleton` are siblings.
 7. **Queries live in `<domain>-queries.ts`** (`import 'server-only'`); **actions live in `<domain>-actions.ts`** (`'use server'`). The file name matches the folder, even for sub-concepts.
 8. **One feature folder per real domain noun.** Sub-concepts (favorite, like, vote, bookmark, search) fold into the parent feature, never their own folder.
 9. **Client components import actions directly** — never receive a server action as a prop just to call it.
 10. **Feature-local cache coordination stays with its domain.** Put pure tags/keys in `<domain>-cache.ts`, client query definitions in `<domain>-query-options.ts`, hook wrappers in `hooks/use-*.ts`, and tiny client leaves in `components/`; promote support code only after real cross-feature reuse.
+11. **Interactive async UI keeps server data on the server and client state local to the interaction.** Use `useOptimistic`, `useTransition`, reducers, URL/search params, and form actions instead of mirrored prop state, derived-state effects, or hand-rolled pending arrays.
 
 ## Workflow
 
@@ -63,22 +64,23 @@ Run these in order for build-from-scratch, feature work, or audits. Each step na
 5. **Build the component + skeleton.** `features/<domain>/components/<name>.tsx`: an async server component that awaits its own query from minimal props; `'use client'` only on interactive leaves.
    → `references/components.md`; for a client data library or strict-SPA/CSR feature → `references/single-page-applications.md`.
    ✓ Component receives IDs/handles/parsed filters or already-resolved records, not `params`; skeleton is a sibling export at the end; no alias skeleton wrappers.
-6. **Compose the page.** `app/<route>/page.tsx`: synchronous, `params.then()`, place `<Suspense fallback={<NameSkeleton />}><Name /></Suspense>`, and wrap fallible sections in an error boundary.
+6. **Compose the page.** `app/<route>/page.tsx`: synchronous, `params.then()` / `Promise.all(...).then(...)`, place Suspense around data bodies, and wrap fallible sections in an error boundary.
    → `references/pages-suspense.md`.
-   ✓ The page only composes; the boundary lives here, not in the feature; route props are resolved to plain values before reaching feature components.
+   ✓ Route props become plain values; stable cards/sections wrap Suspense when they set layout; boundaries stay visible at the page.
 7. **Add interaction** (if any): optimistic updates, pending state, toasts, confirmation.
    → `references/ux-patterns.md`.
-   ✓ Feedback isn't doubled; destructive actions confirm; feature-owned client coordination stays with that feature instead of leaking into unrelated domains.
+   ✓ Feedback isn't doubled; optimistic reducers/actions live with the feature; URL/search params own shareable state; client effects synchronize external systems, not derived React state.
 8. **Verify** against the checklist below before declaring done.
 
 ## Verify before done
 
 Inspect the diff against every invariant — each is checkable by reading the changed files:
 
-- [ ] No page/layout imports a `*-queries` file or defines a route-specific component inline.
-- [ ] Every page with params is synchronous and uses `params.then()` / `searchParams.then()`.
+- [ ] No page/layout imports a `*-queries` file or defines reusable domain UI inline; any inline helper is route-local control flow only.
+- [ ] Every page with params is synchronous and uses `params.then()` / `searchParams.then()` / `Promise.all([params, searchParams]).then(...)`.
 - [ ] Feature components receive plain IDs/handles/parsed filters or resolved records; no feature prop is named `params` or `searchParams`.
 - [ ] Every `<Suspense>` for page data sits in the page; no feature pre-wraps itself.
+- [ ] Stable wrappers/cards/chrome sit outside Suspense; fallback and final content do not duplicate the same outer card.
 - [ ] Every component has its real `*Skeleton` in the same file, at the end; no tiny skeleton aliases just to pass props.
 - [ ] Every `*-queries.ts` starts with `import 'server-only'`; every `*-actions.ts` with `'use server'`.
 - [ ] With `cacheComponents: true`, reusable reads use `'use cache'` / `cacheTag` / `cacheLife`, or `'use cache: private'` / `'use cache: remote'` when appropriate; any dynamic read is intentional and justified.
@@ -87,6 +89,7 @@ Inspect the diff against every invariant — each is checkable by reading the ch
 - [ ] Features with both server tags and client query keys define them once in a pure `<domain>-cache.ts`; queries, actions, hydration, query options, and hooks import from it.
 - [ ] Feature-local client-support files sit in the smallest fitting place: query options at the feature root, `use-*` hook wrappers in `hooks/`, leaf components in `components/`, and shared support only after real cross-feature reuse.
 - [ ] `'use client'` components are leaves — they import actions/hooks/providers, not async server components.
+- [ ] Client leaves use `useOptimistic`, transitions, reducers, URL state, or form actions for interaction; they do not call `setState` in effects for derived React state.
 - [ ] Mutations validate their input and invalidate the affected data.
 
 ## Reference index

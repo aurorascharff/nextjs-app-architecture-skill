@@ -14,6 +14,35 @@ Interaction decisions on top of the architecture: which feedback mechanism to re
 
 `useOptimistic(false)` also works as a transition-scoped **pending flag** that resets automatically when the transition settles — handy when you don't need the `data-pending` bubbling.
 
+## Optimistic mutations for interactive apps
+
+For create/update/delete flows where the changed item is visible, prefer one feature-owned optimistic reducer over hand-rolled pending state spread across the board, modal, and list.
+
+```tsx
+type OptimisticEventAction =
+  | { type: 'create'; event: CalendarEvent }
+  | { type: 'update'; event: CalendarEvent }
+  | { type: 'delete'; id: string }
+  | { type: 'rollback'; id: string };
+
+const [events, dispatchOptimisticEvent] = useOptimistic(
+  initialEvents,
+  eventReducer,
+);
+```
+
+Use names that describe the domain action (`dispatchOptimisticEvent`, `eventReducer`) rather than implementation mechanics like `applyOptimisticEventAction`. The reducer owns the optimistic list shape; components dispatch intent.
+
+For modal creates, apply the optimistic item and close the modal immediately when the local form is valid. If the action fails, roll back and show an error toast. Keeping the modal open with a slow primary button makes the optimistic result feel broken.
+
+For deletes, remove optimistically, then roll back on failure. Do not wait for the server before the item disappears when the user's intent is clear.
+
+## Forms and validation
+
+Do local validation before submitting when the missing field is already available on the client. Show inline field errors without changing the modal or card's overall geometry. Reserve `useActionState` for server-validated errors or field errors that require the action result.
+
+Use a success page/state instead of a toast when the completed action changes the user's task. For example, after a public booking succeeds, replace the booking form with a confirmation and a "Book another" action; a success toast is redundant.
+
 ## Toasts
 
 - **Toast only on error** when an optimistic UI already shows the result — a success toast next to an optimistic checkmark/removal is double feedback, which is noise.

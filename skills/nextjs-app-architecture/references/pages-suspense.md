@@ -7,7 +7,7 @@ How to compose pages, place Suspense boundaries, and prevent layout shift.
 Pages in `app/` import feature components and place `<Suspense>` boundaries. They never:
 
 - Fetch data directly (queries live in feature folders)
-- Define new components except thin transition wrappers (e.g. `<ViewTransition>`)
+- Define reusable UI components except thin transition wrappers (e.g. `<ViewTransition>`) or tiny route-local control-flow helpers
 - Inline route-specific UI (extract it into the feature folder)
 - Pass raw `params` / `searchParams` to features
 
@@ -70,6 +70,8 @@ export default function ProfilePage({ params, searchParams }: PageProps<'/u/[han
 }
 ```
 
+Use `Promise.all([params, searchParams])` when both are needed. Avoid nested `.then()` calls that make the resolved tree hard to read and easy to wrap in the wrong boundary.
+
 ### Metadata, static params, and `notFound()`
 
 - [`generateMetadata`](https://preview.nextjs.org/docs/app/api-reference/functions/generate-metadata) runs before render, so `await params` is fine there — it's a separate async function, not the page body, so it doesn't make the page dynamic.
@@ -104,6 +106,28 @@ export function PostDetailSkeleton() { ... }
 
 If a page uses a transition wrapper (e.g. `<ViewTransition>`), place it in the page next to the `<Suspense>` boundary. Feature components render content and skeletons, not transition wrappers.
 
+## Stable shell, suspending body
+
+Before designing a fallback, identify what is stable and what is data-dependent.
+
+- Stable: card/panel border, padding, icon, label, section heading, fixed action rail.
+- Data-dependent: title text, counts, form body, list rows, availability slots.
+- Rule: stable shell outside Suspense; skeleton/crossfade inside the shell around the data body.
+
+```tsx
+<BookingSettingsCard>
+  <Suspense fallback={<BookingSettingsSkeleton />}>
+    <Crossfade>
+      <BookingSettings handle={handle} />
+    </Crossfade>
+  </Suspense>
+</BookingSettingsCard>
+```
+
+Do not render `<BookingSettingsCard>` in both `fallback` and final content. That duplicates layout responsibility and makes the skeleton guess the card size.
+
+When the top data section has unknown final height and pushes the sections below, either reserve that height in the stable wrapper or group the affected sections in one boundary. Do not create two independent crossfades if the first one changes the second one's starting position.
+
 ## Audit smells
 
 When auditing an existing app, flag and fix these first:
@@ -113,6 +137,28 @@ When auditing an existing app, flag and fix these first:
 - Feature components whose props are `params`, `searchParams`, or a route-shaped object.
 - Page-local components like `HomeContent`, `PostShell`, or `ResultsSection` that only exist to fetch data or group a Suspense fallback.
 - `<Suspense>` inside feature components that prevents the page from grouping reveal behavior.
+
+## Route-local control-flow helpers
+
+Small inline helpers are fine when their only job is route control flow that must live exactly where a boundary is placed:
+
+```tsx
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginRedirect />
+    </Suspense>
+  );
+}
+
+async function LoginRedirect() {
+  await connection();
+  await redirectIfAuthenticated('/calendar');
+  return <LoginForm />;
+}
+```
+
+Do not move a helper like this into a feature folder just to satisfy a blanket "no inline components" rule. It is not domain UI and it is not a reusable feature component; extracting it creates noise. Keep the cookie/session read inside the data-access helper (`redirectIfAuthenticated`, `verifyAuth`, etc.) rather than importing a feature query into the page.
 
 ## Don't create page-local wrapper components
 
@@ -150,12 +196,13 @@ The same applies to feature-level skeleton aliases. If a variant only passes pro
 
 1. **First section gets its own Suspense** with a known-height skeleton fallback.
 2. **Section headings stay outside Suspense** when their final position is stable.
-3. **Variable-height sections: group everything below them** in the same Suspense, including any headings that would otherwise paint in the wrong vertical position.
-4. **Fixed-height sections: own boundary is safe.**
-5. **Variable-length lists: show 2–5 skeleton items**, not the real count.
-6. **Inner Suspense content stays out of the outer skeleton.** Each boundary owns its own.
-7. **Never `fallback={null}` for visible UI.** If a boundary covers UI, give it a real shaped fallback, or group it with a sibling boundary that already has the correct fallback.
-8. **If the top section's final height is unknown, group the following sections** in the same boundary so they reveal together and don't jump underneath.
+3. **Stable wrappers stay outside Suspense.** If fallback and final content both render the same card or panel, lift that wrapper around the boundary.
+4. **Variable-height sections: group everything below them** in the same Suspense, including any headings that would otherwise paint in the wrong vertical position.
+5. **Fixed-height sections: own boundary is safe.**
+6. **Variable-length lists: show 2–5 skeleton items**, not the real count.
+7. **Inner Suspense content stays out of the outer skeleton.** Each boundary owns its own.
+8. **Never `fallback={null}` for visible UI.** If a boundary covers UI, give it a real shaped fallback, or group it with a sibling boundary that already has the correct fallback.
+9. **If the top section's final height is unknown, group the following sections** in the same boundary so they reveal together and don't jump underneath.
 
 ## Error boundaries
 

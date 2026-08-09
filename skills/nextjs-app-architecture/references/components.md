@@ -209,6 +209,34 @@ The opinionated bit: name promise props with a `Promise` suffix (`itemsPromise`,
 
 Follow `references/single-page-applications.md` when a feature uses a browser data cache or needs externally authored updates. It covers when to use a library, where its files live, server seeding, Cache Components coordination, hydration, and mutations.
 
+## Interactive async React shape
+
+Keep the server/client split even when the UI is highly interactive:
+
+- The server component reads durable data and renders the initial tree.
+- The client leaf owns only ephemeral interaction: open state, focused field, pending flag, optimistic draft, selected tab that is not shareable.
+- Shareable or bookmarkable state lives in the URL/search params, not mirrored in component state.
+- Client leaves import server actions directly and call them from form actions or event handlers.
+- Optimistic collections use `useOptimistic` with a reducer/action object, not scattered arrays of pending IDs in several components.
+
+Avoid effects whose only job is to copy React state to React state:
+
+```tsx
+// Wrong — derived React state cascades through an effect
+useEffect(() => {
+  setSelectedSlot(null);
+}, [day]);
+```
+
+Prefer one of these shapes:
+
+- Key the interactive child by the value that resets it: `<BookingSlots key={day} day={day} />`.
+- Derive the value during render.
+- Put the value in the URL/search params if navigation should own it.
+- Use a reducer where the same event that changes `day` also clears `selectedSlot`.
+
+Effects are for external systems: DOM APIs, subscriptions, timers, browser storage, analytics, or imperative libraries. They are not a cleanup lane for state that React could derive or reset structurally.
+
 ## Mutations
 
 For client-side reactions to a server mutation (instant feedback, pending state, success/error toasts), see `references/ux-patterns.md`. To cache rendered output across requests, see `references/cache-components.md`.
