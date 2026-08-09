@@ -12,6 +12,8 @@ When a server read also seeds a browser data cache, follow `references/single-pa
 
 Create `features/<domain>/<domain>-queries.ts`. Mark it `import 'server-only'` — that's the invariant. Default to plain async exports.
 
+Resource queries own `notFound()` when a requested record is absent. Route pages only compose the feature and pass route values down; they do not perform data lookups or decide resource existence.
+
 ```ts
 import 'server-only';
 
