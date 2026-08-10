@@ -1,9 +1,0 @@
-{
-  "version": "1.0.0",
-  "organization": "Aurora Scharff",
-  "date": "July 2026",
-  "abstract": "Documents agentic developer experience friction encountered during a development flow — capturing where an agent gets stuck by unclear docs, framework behavior, tooling, sandboxing, or stale training-data assumptions, which also surfaces DX issues for developers. Produces a structured, severity-coded markdown log with a header, verbatim prompt, tool timeline, summary, action items (Docs / Framework / DX), and a source-tagged chronological log. References cover agent behavior, the output template, an example run, and how a human reads the finished log.",
-  "references": [
-    "https://agent-friction-skill.vercel.app/"
-  ]
-}
