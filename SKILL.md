@@ -4,7 +4,7 @@ description: Build or audit Next.js 16 App Router apps using a next-beats-style 
 license: MIT
 metadata:
   author: aurorascharff
-  version: "1.3.7"
+  version: "1.3.8"
 ---
 
 # Next.js App Architecture
@@ -38,7 +38,7 @@ The non-negotiables. The workflow produces them; the final check verifies them.
 5. **The page owns the Suspense boundary; the feature owns the skeleton.** Features never pre-wrap themselves in `<Suspense>`; stable wrappers/cards/chrome wrap the boundary instead of being duplicated in fallback and final content.
 6. **Skeletons live in the same file as the component**, exported alongside it, defined at the end. `Feed` and `FeedSkeleton` are siblings.
 7. **Queries live in `<domain>-queries.ts`** (`import 'server-only'`); **actions live in `<domain>-actions.ts`** (`'use server'`). The file name matches the folder, even for sub-concepts.
-8. **One feature folder per real domain noun.** Sub-concepts (favorite, like, vote, bookmark, search) fold into the parent feature, never their own folder.
+8. **Feature folders follow product ownership.** Entity-owned sub-concepts (favorite, like, vote, bookmark) fold into their parent. A route-level experience that composes multiple domains may own its UI and state in a separate feature while each domain keeps its queries and actions.
 9. **Client components import actions directly** — never receive a server action as a prop just to call it.
 10. **Feature-local cache coordination stays with its domain.** Put pure tags/keys in `<domain>-cache.ts`, client query definitions in `<domain>-query-options.ts`, hook wrappers in `hooks/use-*.ts`, and tiny client leaves in `components/`; promote support code only after real cross-feature reuse.
 11. **Interactive async UI keeps server data on the server and client state local to the interaction.** Use `useOptimistic`, `useTransition`, reducers, URL/search params, and form actions instead of mirrored prop state, derived-state effects, or hand-rolled pending arrays.
@@ -54,7 +54,7 @@ Run these in order for build-from-scratch, feature work, or audits. Each step na
      ✓ You know whether you are creating the architecture or converting loader-shaped code into it.
 2. **Place the work.** Decide the feature folder before writing anything.
    → `references/feature-folders.md` (decision tree + merge rules).
-   ✓ A real domain, or folded into the right parent.
+   ✓ A real domain, a cross-domain product experience, or folded into the right parent.
 3. **Write the query and, when a client cache shares its data, the cache contract.** Put server reads in `<domain>-queries.ts` with `import 'server-only'`; keep shared tag/key identities in a pure `<domain>-cache.ts`.
    → `references/queries-actions.md`; for SWR/TanStack Query → `references/single-page-applications.md`; with `cacheComponents: true`, also → `references/cache-components.md`.
    ✓ Cache identities are defined once; server reads are server-only, cached/tagged/lifetimed under Cache Components, and return domain types rather than ORM rows.
@@ -85,7 +85,7 @@ Inspect the diff against every invariant — each is checkable by reading the ch
 - [ ] Every `*-queries.ts` starts with `import 'server-only'`; every `*-actions.ts` with `'use server'`.
 - [ ] With `cacheComponents: true`, reusable reads use `'use cache'` / `cacheTag` / `cacheLife`, or `'use cache: private'` / `'use cache: remote'` when appropriate; any dynamic read is intentional and justified.
 - [ ] Mutations touching cached reads call `updateTag()` / `revalidateTag(..., 'max')` for the matching tags; `refresh()` is not a substitute for tag invalidation.
-- [ ] Action files are named `<folder>-actions.ts`; no sub-concept spawned its own folder.
+- [ ] Action files are named `<folder>-actions.ts`; no entity-owned sub-concept spawned its own folder, and cross-domain product features do not take ownership of entity queries/actions.
 - [ ] Features with both server tags and client query keys define them once in a pure `<domain>-cache.ts`; queries, actions, hydration, query options, and hooks import from it.
 - [ ] Feature-local client-support files sit in the smallest fitting place: query options at the feature root, `use-*` hook wrappers in `hooks/`, leaf components in `components/`, and shared support only after real cross-feature reuse.
 - [ ] `'use client'` components are leaves — they import actions/hooks/providers, not async server components.

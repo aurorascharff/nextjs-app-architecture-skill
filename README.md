@@ -23,7 +23,7 @@ Before using the skill on a project, follow the [Next.js AI Coding Agents guide]
 
 ## What it covers
 
-- **Feature folders** — when to create one, when to merge a sub-concept into a parent, file naming.
+- **Feature folders** — domain ownership, cross-domain product experiences, merging sub-concepts into a parent, and file naming.
 - **Queries** — `import 'server-only'`, plain async reads by default, selective React `cache()` only for proven same-request dedup, and `'use cache'` + `cacheTag` + `cacheLife` for Cache Components.
 - **Actions** — `'use server'`, input validation, tag invalidation under Cache Components, calling from client components.
 - **Components** — async server components that receive IDs/parsed values, sibling skeletons, single-use helpers, the client boundary, the `use()` + promise-prop pattern, live data via polling.

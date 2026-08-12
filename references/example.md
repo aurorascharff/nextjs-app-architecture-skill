@@ -15,7 +15,7 @@ For the reasoning behind this architecture, read [Component Architecture for Rea
 | 5. Page owns Suspense; feature owns skeleton | Pages place the boundary (e.g. `app/(app)/genre/[genre]/page.tsx`); features export the skeleton (below). |
 | 6. Skeleton in the same file, at the end | `features/track/components/track-row.tsx` (`TrackRow` … `TrackListSkeleton`), `features/genre/components/genre-card.tsx`. |
 | 7. `<domain>-queries.ts` (`server-only`) / `<domain>-actions.ts` (`'use server'`) | `features/track/track-queries.ts`, `features/playlist/playlist-actions.ts`. |
-| 8. One folder per domain; sub-concepts folded in | `toggleFavorite` in `features/track/track-actions.ts` (no `favorite` folder); `searchTracks` in `features/track/track-queries.ts` (no `search` folder). |
+| 8. Feature folders follow product ownership | `toggleFavorite` stays in `features/track/track-actions.ts`; entity queries such as `searchTracks` and `searchPlaylists` stay with their domains, while `features/search/components/` owns the cross-domain search experience. |
 | 9. Client components import actions directly | `features/track/components/track-interactions.tsx` imports `toggleFavorite` directly. |
 
 ## Supporting patterns

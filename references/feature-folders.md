@@ -7,8 +7,8 @@ How to organize code under `features/` and `app/`.
 ```
 features/<domain>/
   <domain>-cache.ts     # Pure server tags + client query keys, when shared
-  <domain>-queries.ts   # Server-only queries
-  <domain>-actions.ts   # Server actions
+  <domain>-queries.ts   # Server-only queries, when this feature owns reads
+  <domain>-actions.ts   # Server actions, when this feature owns writes
   <domain>-query-options.ts # Client data-library query definitions, when needed
   components/           # Server + client components, each with its skeleton
   types/                # Feature-local public types, when needed by multiple files
@@ -16,17 +16,16 @@ features/<domain>/
   providers/            # Feature-local providers, only when the provider belongs to this domain
 ```
 
-The folder name **is** the domain. The query and action filenames match the folder.
+The folder name identifies the domain or cohesive product experience. Query and action filenames match the owning domain folder when present.
 
 ## How many features?
 
-Keep the feature list short. One folder per **domain noun a user would recognize**, not per database table or technical concern.
+Keep the feature list short. Use folders for **domains and cohesive product experiences a user would recognize**, not database tables or technical concerns.
 
-A new folder is justified when **all three** are true:
+A new folder is justified in either of these cases:
 
-1. The concept has its own queries.
-2. The concept has its own pages or routes.
-3. The concept is referenced from at least two other features.
+1. **Domain ownership:** it owns the queries, actions, and components for a real product entity.
+2. **Cross-domain composition:** it owns the route-level UI or client state for an experience that combines multiple domains. The underlying queries and actions remain with the domains whose data they read or mutate.
 
 If you find yourself making a feature folder with one query, one action, and one button, fold it into the parent feature instead.
 
@@ -37,7 +36,7 @@ Concepts that exist only in service of a parent entity belong inside the parent'
 - A `favorite` or `bookmark` concept that only attaches to one parent entity (events, posts) → inside that parent's folder.
 - A `like`, `repost`, `vote`, or `reaction` concept on a piece of content → with that content's feature.
 - `auth` / `session` / `current user` → a single `user` folder, not split.
-- A cross-cutting concern like `search` folds into the primary content feature it queries (`searchTracks` in `features/track/`), not a `features/search/` folder — the page composes it.
+- A search query stays with the domain it searches (`searchTracks` in `features/track/`, `searchPlaylists` in `features/playlist/`). When one search experience combines several domains, `features/search/` may own the search form, result composition, and client state without taking ownership of those domain queries.
 
 Concrete example: `toggleFavorite` is a mutation about events ("I favorite an event"), not its own domain. It lives in `features/event/event-actions.ts`, not `features/favorite/favorite-actions.ts`.
 
@@ -57,6 +56,7 @@ features/event/
 
 - `<folder>-queries.ts` — even if the file has only one query.
 - `<folder>-actions.ts` — even if a mutation is about a sub-concept.
+- Don't create empty query or action files for a cross-domain UI feature that doesn't own data access.
 - Other `<folder>-*.ts` files are fine when the folder needs them (`playlist-constants.ts`, `<folder>-schema.ts`), as long as they keep the folder-name prefix. Don't put reusable domain types in a root `*-types.ts` file; use `features/<domain>/types/` once a type is imported by multiple files.
 - Component files use any descriptive name. The component (not the feature) is the unit here.
 
