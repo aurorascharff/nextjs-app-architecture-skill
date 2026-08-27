@@ -12,6 +12,15 @@ Interaction decisions on top of the architecture: which feedback mechanism to re
 | Submit disable + spinner | [`useFormStatus`](https://react.dev/reference/react-dom/hooks/useFormStatus) | Call it from a child of `<form>`, not the form component itself. |
 | One-shot result with no visible change | toast | See below. |
 
+### Name the signal when a subtree has more than one pending source
+
+`data-pending` bubbles through CSS, so every descendant that sets it participates. `useLinkStatus` sets it on any pending link, which means `group-has-data-pending:` on a page wrapper also fires for ordinary navigation and dims content that is not being refetched. When a subtree can be pending for more than one reason, give the reason you are reacting to its own attribute (`data-filtering`, `data-saving`) and key the ancestor off that.
+
+### Two things to get right with `useOptimistic`
+
+- The value reverts as soon as its transition settles, so the work it predicts has to run **inside the same** `startTransition`. Setting the optimistic value in one transition and navigating in another snaps it back before the URL changes.
+- Derive the controls from the optimistic value and the surrounding chrome from the committed one. A slider thumb should follow the drag immediately, but a "Clear all filters" button keyed off that same optimistic value appears while the filter is still in flight.
+
 `useOptimistic(false)` also works as a transition-scoped **pending flag** that resets automatically when the transition settles — handy when you don't need the `data-pending` bubbling.
 
 ## Optimistic mutations for interactive apps
