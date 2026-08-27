@@ -80,7 +80,7 @@ Use `Promise.all([params, searchParams])` when both are needed. Avoid nested `.t
 
 ## Prefer a page boundary over `loading.tsx`
 
-Put the boundary in the page next to the `params.then()` / `searchParams.then()` it covers, rather than adding a route-segment `loading.tsx`. A page boundary keeps the fallback beside the JSX it stands in for, lets sibling sections share one boundary or split into several, and can be wrapped in `<ViewTransition>` so the reveal animates. A `loading.tsx` renders outside the page's own tree, so a transition wrapper inside the page cannot animate the swap out of it, and one fallback has to cover the whole route.
+Put the boundary in the page next to the `params.then()` / `searchParams.then()` it covers, rather than adding a route-segment `loading.tsx`. A page boundary keeps the fallback beside the JSX it stands in for, lets sibling sections share one boundary or split into several, and takes a single `<ViewTransition>` around the content to animate the reveal. A `loading.tsx` covers the whole route with one fallback, and animating its reveal means splitting the transition across two files, an `exit` on the skeleton in `loading.tsx` and an `enter` on the content in the page.
 
 ## The page owns the Suspense boundary
 
