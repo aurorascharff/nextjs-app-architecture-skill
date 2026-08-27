@@ -259,11 +259,11 @@ Fixes:
 
 To audit CLS, use React DevTools' Suspense panel to pin each boundary in its loading state and check vertical positions.
 
-## Runtime prefetch for high-value routes
+## Optimizing prefetching for high-value routes
 
 With `cacheComponents` + [`partialPrefetching`](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/partialPrefetching) enabled, a visible `<Link>` prefetches the destination's shared [App Shell](https://preview.nextjs.org/docs/app/glossary#app-shell) — enough to commit navigation instantly, with link-specific content streaming after. The default (`'auto'`) already does this; don't write `prefetch = 'auto'`.
 
-Use `<Link prefetch={true}>` on high-value links to also resolve the destination's per-link runtime data (`params`, `searchParams`, the full URL) before the click. Each such link can wake the server for a runtime prerender, so reserve it for routes users predictably visit next. See [runtime prefetching](https://preview.nextjs.org/docs/app/guides/runtime-prefetching).
+Use `<Link prefetch={true}>` on high-value links to also resolve the destination's per-link data (`params`, `searchParams`, the full URL) at prefetch time. Each such link can wake the server for a prerender, so reserve it for routes users predictably visit next. See [Optimizing prefetching](https://preview.nextjs.org/docs/app/guides/optimizing-prefetching).
 
 Can't enable `partialPrefetching` app-wide yet? Opt in per route with `export const prefetch = 'partial'` on the destination, then drop the per-route exports once the global flag is on — see [Adopting Partial Prefetching](https://preview.nextjs.org/docs/app/guides/adopting-partial-prefetching) for the incremental path and [prefetch config](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/prefetch) for the options. To validate navigation feels instant, see the [`instant` config](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant) and [Instant Navigation guide](https://preview.nextjs.org/docs/app/guides/instant-navigation).
 
