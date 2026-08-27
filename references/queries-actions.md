@@ -22,6 +22,25 @@ export async function getFeed(userId: string) {
 }
 ```
 
+## Cache keys are the arguments
+
+A `'use cache'` function's arguments are its cache key, so shape them deliberately.
+
+Take normalized primitives, not the params object:
+
+```ts
+// features/book/book-queries.ts
+export async function getBooksPage(page: number = 1, search: string = '', year: number = MAX_YEAR) {
+  'use cache';
+  cacheLife('hours');
+  // ...
+}
+```
+
+Passing `searchParams` straight through keys the entry on an object carrying every param the route knows about, including the ones the caller left undefined, and the key then changes shape whenever the route gains a param.
+
+Normalize and clamp in the feature's own helper, **before** the call, not inside the cached function. `?yr=9999`, `?yr=2023`, and no `yr` at all describe the same result set, so they should resolve to the same arguments and share one entry. Clamping inside the cached function gives each spelling its own entry with identical contents.
+
 Use [`cache()`](https://react.dev/reference/react/cache) from React only for **request-level deduplication** when the same dynamic query is called multiple times with the same arguments in one render. Highest-value cases: a session/user lookup used by many queries, or a shared expensive read used by metadata + page sections. Don't wrap every query "just in case" — it adds indirection and can hide when data is intentionally dynamic.
 
 `cache()` dedups within a request; `'use cache'` + `cacheTag` (Cache Components) shares results *across* requests. Don't add React `cache()` to a function only because it already uses `'use cache'`; that is double-caching unless you have a separate, proven same-request duplication problem. See `references/cache-components.md`.

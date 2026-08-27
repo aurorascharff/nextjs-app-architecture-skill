@@ -88,6 +88,7 @@ Import the real skeleton and pass the prop inline at the `<Suspense>` boundary: 
 4. Show 2–5 placeholders for variable-length lists, not the real count.
 5. Don't include skeletons for inner Suspense content — those have their own boundaries.
 6. Reserve the right height. CLS comes from skeletons that are shorter than the real content.
+7. Dense placeholders should not animate. A grid of 28 shimmering covers reads as flicker rather than progress, so use a flat low-contrast fill when there are many items and keep the animated sweep for a handful of bars.
 
 ## Group related components in one file
 
