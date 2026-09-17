@@ -89,6 +89,8 @@ Import the real skeleton and pass the prop inline at the `<Suspense>` boundary: 
 5. Don't include skeletons for inner Suspense content — those have their own boundaries.
 6. Reserve the right height. CLS comes from skeletons that are shorter than the real content.
 7. Dense placeholders should not animate. A grid of 28 shimmering covers reads as flicker rather than progress, so use a flat low-contrast fill when there are many items and keep the animated sweep for a handful of bars.
+8. Draw text as bars shorter than the line, but keep the line box: bar height plus vertical margin equals the text's line-height, so a 20px line gets a 14px bar with 3px above and below. Stack bars in a flex column so the margins don't collapse into each other.
+9. Large blocks (images, buttons, avatars) get the flat fill too; only text lines animate, or the whole page pulses.
 
 ## Group related components in one file
 
@@ -142,6 +144,10 @@ async function PostDetail({ id }: { id: string }) {
   );
 }
 ```
+
+### Pass children or values across the boundary, not elements
+
+A Server Component hands JSX to a Client Component as `children` or a named slot prop. Don't pass a *Client Component element* as a prop for the client side to clone or render (`<Button render={<Link … />} />` from a server file) — the element's type is a client reference the server render can't resolve. Render the link and give it the button's classes instead, or move the composition into the client file.
 
 ### Server content as children of client components
 

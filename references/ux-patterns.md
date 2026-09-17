@@ -10,6 +10,7 @@ Interaction decisions on top of the architecture: which feedback mechanism to re
 | No optimistic fit (filters, sort, navigation) | [`useTransition`](https://react.dev/reference/react/useTransition) + `data-pending` | Put `data-pending` on the pending node; let ancestors react with CSS (`has-data-pending:` for a direct parent, `group-has-data-pending:` further up) so it bubbles without prop drilling. |
 | Form field validation ("fix this field") | [`useActionState`](https://react.dev/reference/react/useActionState) | Action returns `{ error }`; render inline with `aria-invalid` + `role="alert"`. |
 | Submit disable + spinner | [`useFormStatus`](https://react.dev/reference/react-dom/hooks/useFormStatus) | Call it from a child of `<form>`, not the form component itself. |
+| Selections that live in the URL (filters, wizard steps) | `useOptimistic(draft)` + [`router.replace`](https://preview.nextjs.org/docs/app/api-reference/functions/use-router) inside `startTransition` | The URL is the source of truth; the optimistic draft keeps the control responsive until the server confirms the new search params. Submit the final draft to the action through hidden inputs and re-validate it there. |
 | One-shot result with no visible change | toast | See below. |
 
 ### Name the signal when a subtree has more than one pending source
@@ -63,11 +64,15 @@ Use a success page/state instead of a toast when the completed action changes th
 
 Portaled elements (toasts, dialogs, popovers, dropdowns, tooltips) flicker during route transitions unless excluded. Apply `viewTransitionName: 'none'` to the portal root. When the portal also needs stacking control (z-index) or has translucent layers (backdrop-blur), give it a *named* transition and neutralize it in CSS instead — `::view-transition-group(name) { animation: none; z-index: … }` can do things `'none'` can't. See the [React View Transitions skill](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-view-transitions).
 
+## Forms that outlive a navigation
+
+Uncontrolled inputs keep their DOM value when the same route re-renders with different search params, so a search form can show the previous query while the results below reflect the new one. Key the form by the query it was rendered from (`key={queryString}`) so it remounts with fresh `defaultValue`s.
+
 ## Destructive actions (delete / leave / unsubscribe)
 
-Gate behind a confirmation dialog, and mind two edge cases:
+Gate behind a confirmation dialog whose confirm button owns the pending state, toast `error` from the result, and navigate away only after `{ ok: true }`. Mind two edge cases:
 
-- **Don't `redirect()` inside the action.** It throws, which stops the client from toasting or closing the dialog. Return `{ ok: true }` and navigate with `router.push()`.
+- **Don't `redirect()` inside an action called from a click or dialog.** It throws, which stops the client from toasting or closing the dialog, and a `try/catch` around the call mistakes it for a failure. Return `{ ok: true }` and navigate with `router.push()`. (Form actions are different — see `references/queries-actions.md`.)
 - **Don't wrap the whole action call in `useTransition`** inside the dialog — with view transitions on, that animates the background UI behind the dialog. Track pending with `useState` / `useOptimistic(false)` and reserve `startTransition` for the post-success navigation only.
 
 ## The action-prop pattern

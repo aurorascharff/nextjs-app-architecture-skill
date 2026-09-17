@@ -37,9 +37,11 @@ Dynamic reads are the exception: use them for values that must be recomputed for
 | Data | Directive | Notes |
 | ---- | --------- | ----- |
 | Cacheable across users (public listings, computed pages) | [`'use cache'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache) | Add [`cacheTag`](https://preview.nextjs.org/docs/app/api-reference/functions/cacheTag) (a global + a scoped tag) and a [`cacheLife`](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/cacheLife) profile. |
-| Per-user / reads cookies, headers, session | [`'use cache: private'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-private) | Cached in the browser only, doesn't persist across reloads; never stored on the server. |
+| Per-user / reads cookies, headers, session | [`'use cache: private'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-private) | Cached in the browser only, doesn't persist across reloads; never stored on the server. Still give it a `cacheTag` — sign-in and sign-out must `updateTag` it, or the session read stays stale until reload. |
 | Remote service, safe across users, worth durable storage | [`'use cache: remote'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-remote) | Protects against rate-limited third-party APIs. |
 | Genuinely dynamic per request | none | Must be justified. Read inside `<Suspense>`; mutations use `refresh()` because no tag exists. |
+
+When a flow needs the same data twice — once to *decide* (should this section show, is this option still available) and once to *render* it — make it one cached read and let both callers hit it. Don't add a lighter "exists" query next to the full one; the second request is free from the cache, and the decision and the render can never disagree.
 
 Cache the **query** when its result should be reused across requests. Cache the **component** when rendering is expensive and props are stable (a nav, a trending sidebar). Don't `'use cache'` a component that already calls a `'use cache'` query — double-caching, no benefit.
 

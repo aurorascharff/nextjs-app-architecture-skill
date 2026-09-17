@@ -75,6 +75,24 @@ export async function createPost(formData: FormData) {
 
 [`refresh()`](https://preview.nextjs.org/docs/app/api-reference/functions/refresh) re-renders the current route for the current user. Use it when the affected read is deliberately dynamic and has no tag. With Cache Components enabled, reusable reads should have matching `cacheTag()` calls, so server actions normally call `updateTag()` for read-your-own-writes. See `references/cache-components.md`.
 
+### Shared and seeded records
+
+Records every account can see but nobody owns (demo defaults, system templates) use a nullable owner: `userId: null`. Reads include them alongside the caller's own rows (`where: { OR: [{ userId }, { userId: null }] }`), the detail read allows them, and every mutation refuses them with `{ ok: false, error }` rather than trusting the UI to hide the button.
+
+### Tags live once
+
+When a tag string is used by a query (`cacheTag`) and an action (`updateTag`), define it once in `<domain>-cache.ts` and import it from both sides:
+
+```ts
+// features/post/post-cache.ts
+export const postTags = {
+  all: 'posts',
+  detail: (id: string) => `post:${id}`,
+};
+```
+
+A read belongs in the folder whose data it tags. A query over `event` rows that happens to power a venue page still lives in `features/event/`, tagged with the event tags — the page that shows the data doesn't decide where the query lives.
+
 ### Action file naming
 
 Actions for a feature always go in `<folder>-actions.ts`, matching the folder name — even when the mutation operates on a sub-concept. `toggleFavorite` in `features/event/` lives in `event-actions.ts`, not `favorite-actions.ts`. The folder is the source of truth for the name.
@@ -117,6 +135,8 @@ export type ActionResult<T = void> = { ok: true; data?: T } | { ok: false; error
 ```
 
 Toast on `ok: false` from the client. Skip success toasts when an optimistic UI already shows the result.
+
+`redirect()` is fine inside a `<form action>` / `useActionState` action: the form handles the throw and the success branch is the new page. For actions called from a click or a dialog, return `{ ok: true }` and navigate on the client — see `references/ux-patterns.md`.
 
 A shared `ActionResult<T>` is optional — a per-action inline union is just as good, and often clearer when the payload has a natural name: `return { ok: true as const, playlist }` reads better than a generic `data`. What matters is that fallible actions return a discriminated union the client can narrow on, not that every action shares one type.
 

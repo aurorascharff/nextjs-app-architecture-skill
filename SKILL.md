@@ -4,7 +4,7 @@ description: Build or audit Next.js 16 App Router apps using a next-beats-style 
 license: MIT
 metadata:
   author: aurorascharff
-  version: "1.3.9"
+  version: "1.3.10"
 ---
 
 # Next.js App Architecture
@@ -82,6 +82,7 @@ Inspect the diff against every invariant — each is checkable by reading the ch
 - [ ] Every `<Suspense>` for page data sits in the page; no feature pre-wraps itself.
 - [ ] Stable wrappers/cards/chrome sit outside Suspense; fallback and final content do not duplicate the same outer card.
 - [ ] Every component has its real `*Skeleton` in the same file, at the end; no tiny skeleton aliases just to pass props.
+- [ ] Skeleton and content are the same height (measured), section headings sit outside the boundary, and sections that can be empty reserve their space.
 - [ ] Every `*-queries.ts` starts with `import 'server-only'`; every `*-actions.ts` with `'use server'`.
 - [ ] With `cacheComponents: true`, reusable reads use `'use cache'` / `cacheTag` / `cacheLife`, or `'use cache: private'` / `'use cache: remote'` when appropriate; any dynamic read is intentional and justified.
 - [ ] Mutations touching cached reads call `updateTag()` / `revalidateTag(..., 'max')` for the matching tags; `refresh()` is not a substitute for tag invalidation.
