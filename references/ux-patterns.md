@@ -53,12 +53,35 @@ Do local validation before submitting when the missing field is already availabl
 
 Use a success page/state instead of a toast when the completed action changes the user's task. For example, after a reservation, checkout, or invite request succeeds, replace the form with a confirmation and a secondary "start another" action; a success toast is redundant.
 
+## Search and filter forms
+
+A plain `<form method="get">` submits as a document request: the whole page reloads and every boundary shows its skeleton again. Search and filter forms are client navigations:
+
+- **Defaults come from the URL, not from props.** Read `useSearchParams()` in the client form and key the `<form>` on `params.toString()` so the fields follow the URL. The form then lives in the route shell and renders at once on navigation; a form that takes its defaults from a `searchParams.then()` sits inside the URL boundary and re-skeletons on every search.
+- **Prefetch imperatively while the user is still choosing.** On `onChange`, build the destination URL and call `router.prefetch(href)`. By the time they submit, the results are usually cached.
+- **Submit in a transition.** `onSubmit` prevents the default and runs `startTransition(() => router.push(href))`. The submit button's `useFormStatus` spinner already reflects that transition, so don't add a second spinner next to it.
+- **Fade the current results instead of replacing them with a skeleton.** Render the results as children of the form's client shell under a wrapper with `data-pending={isPending ? '' : undefined}` and `transition-opacity data-pending:opacity-60`. The old results stay on screen, dimmed, until the new ones commit.
+- **The pending indicator must not move the row.** Give the submit button a fixed width that already fits its spinner.
+
+`next/form` gives the client navigation and the button spinner for free when no fade is needed; use the client shell when the results should dim.
+
+## Pending states for in-page interactions
+
+A click that starts a write has a visible pending state on the thing that was clicked, and it never changes layout:
+
+- **Item pickers (seats, slots, options).** While the chosen item's write is pending, disable every item in the group, fade the others to about 50%, and keep the chosen one solid with `aria-busy`. Don't put a spinner inside the item, and don't change the cursor. A status line under the group says what is happening ("Holding seat 12C for you…") and then what was chosen.
+- **Nudges are inline, not toasts.** Clicking Continue before a required pick turns the group's status line into the instruction ("Pick a seat to continue") and resets when the pick is made. The button stays enabled; a disabled button hides the reason.
+- **Expected failures are inline too.** When the write fails for a reason the user can act on (the seat was taken), show it on the same status line and clear the optimistic value. Toasts are for failures that have no place in the layout.
+- **`useActionState` outside a form.** Its dispatch is a plain call, so wrap it in `startTransition(() => dispatch(value))`. Without that, `isPending` and the optimistic value only appear when the action settles, which reads as a frozen click.
+- **Optimistic values inside an action.** A `setState` inside an async action is held until the action finishes. Use `useOptimistic` for anything that must show while the action runs.
+
 ## Toasts
 
 - **Toast only on error** when an optimistic UI already shows the result — a success toast next to an optimistic checkmark/removal is double feedback, which is noise.
 - **Toast on success** only for non-visible side effects (email sent, link copied, file uploaded).
 - **Don't toast for routine navigation** — the page change is the feedback.
 - **Don't toast inside a server action.** Toasts are client-side; return a result and toast at the call site.
+- **Don't toast a validation nudge or an expected in-page failure.** Use the component's own status line (see Pending states for in-page interactions).
 
 ## View transitions: portaled / floating UI
 
@@ -74,6 +97,18 @@ Gate behind a confirmation dialog whose confirm button owns the pending state, t
 
 - **Don't `redirect()` inside an action called from a click or dialog.** It throws, which stops the client from toasting or closing the dialog, and a `try/catch` around the call mistakes it for a failure. Return `{ ok: true }` and navigate with `router.push()`. (Form actions are different — see `references/queries-actions.md`.)
 - **Don't wrap the whole action call in `useTransition`** inside the dialog — with view transitions on, that animates the background UI behind the dialog. Track pending with `useState` / `useOptimistic(false)` and reserve `startTransition` for the post-success navigation only.
+
+## Blocking UI is for writes, not navigations
+
+A full-screen pending overlay on link navigation is never worth it: the App Shell commits the destination immediately, with a fallback at worst, so the overlay flashes for a frame and reads as flicker. Reserve a blocker for the one write that must not be double-submitted or abandoned (confirm, pay). While the action is pending, replace the action buttons with the progress indicator so there is nothing left to click, and add a `beforeunload` guard for the duration. Back and forward cannot be blocked reliably; don't try.
+
+Render the blocker from a layout that survives the redirect, not from the form. Anything inside the step's subtree, portaled or not, is deleted with the step, and React does not animate a nested boundary's exit inside a deleted subtree. Drive it with `useOptimistic` from inside the action: a plain `setState` made inside an async action is held back until the action settles, so the overlay would never appear, while an optimistic value shows at once and reverts in the same transition that commits the redirect. That shared transition is what lets the overlay crossfade out and a shared element (`<ViewTransition name share>`) morph into the result page. Keep the durations on the shared timing tokens and avoid `backdrop-filter` on the captured element, otherwise the result page's Suspense reveal interrupts the still-running transition and the settle looks like a flicker.
+
+Don't disable a Next or Continue button because a prerequisite is missing or still settling. Keep it clickable and explain on click with a toast ("Pick a seat first", "Please wait for your seat to confirm"); a disabled button hides the reason. While the prerequisite is pending, show progress on the thing itself (a spinner in the chosen seat, a status line under the grid), not only a fade.
+
+## Leaving a finished flow
+
+History cannot be cleared, so redirect from the completing action with `RedirectType.replace`: the final step is replaced by the result page instead of sitting one swipe behind it. Don't add an "already booked, redirect to the result" check to the steps to cover the remaining history entries. It breaks the legitimate case of doing the same flow again (a second ticket on the same flight), and a `redirect()` in the destination is never followed by a prefetch, so every step of that flow loses its instant navigation.
 
 ## The action-prop pattern
 

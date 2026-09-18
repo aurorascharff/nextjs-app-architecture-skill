@@ -51,6 +51,10 @@ You usually don't need this. A query that reads `cookies()`/`headers()` or await
 
 Prefer `io()` over [`connection()`](https://preview.nextjs.org/docs/app/api-reference/functions/connection): both exclude what follows from the shell, but `connection()` blocks prefetches while `io()` stays prefetchable. Reach for `connection()` only when rendering must wait for a real user request.
 
+### A live layer needs no marker, only its own boundary
+
+A read that must be fresh on every request (seats left, stock, presence) is simply left uncached and given its own `<Suspense>` inside the cached component. Under Cache Components an uncached async read is dynamic by itself: it is left out of the static shell and of every prefetch, and streams in on the request. Don't add `connection()` or `io()` to say so. The one trap is a synchronous unstable value such as `new Date()`: the prerender flags it if it runs before the first awaited I/O, so evaluate it after the first `await` (run the dated query second), or move it inside a cache scope where it is allowed.
+
 ## Decide how to invalidate
 
 - [`updateTag(tag)`](https://preview.nextjs.org/docs/app/api-reference/functions/updateTag) — in **server actions**, when the user should see the result immediately (read-your-own-writes). Requires the query to carry a matching `cacheTag`.
@@ -58,6 +62,14 @@ Prefer `io()` over [`connection()`](https://preview.nextjs.org/docs/app/api-refe
 - [`refresh()`](https://preview.nextjs.org/docs/app/api-reference/functions/refresh) — re-render the current route for the current user. Use it for deliberately dynamic reads with no tag; don't use it instead of `updateTag()` for cached reads.
 
 Tag, cache, invalidate: the `cacheTag` in the query and the `updateTag` in the action use the same string and live in the same feature folder.
+
+### Plain `use cache` is per instance in serverless
+
+`'use cache'` stores entries in the memory of the process that computed them. On a serverless host every request can land on a different instance, so shared reads recompute on nearly every request even though they are "cached", and the per-link prefetch pays the same cost. Symptom: the same page takes the same time on every reload in production while it is instant on the second reload locally. Give shared reads (catalogs, offers, search results, a user's list keyed by their id) `'use cache: remote'` so the platform's shared cache handler holds them; Vercel wires the Runtime Cache to it automatically, and without a configured handler `remote` falls back to the in-memory LRU, so local behavior is unchanged. Keep `'use cache: private'` for per-request data. Verify in production by requesting the same URL a few times with a fixed session cookie and comparing streamed time, not TTFB.
+
+### Tag by write frequency, not by screen
+
+When one view merges a slow, rarely changing read (a computed offer, a catalog) with a cheap, chatty one (holds, presence, counters), give each its own cache function and tag. A write to the chatty layer then invalidates only that layer. If both share one tag, every small write recomputes the expensive read and the mutation feels as slow as the page. Measure the mutation from click to settled UI; a time that matches a cached read's cost means the tag is too broad.
 
 ## Coordinate hydrated client data
 

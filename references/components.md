@@ -89,8 +89,10 @@ Import the real skeleton and pass the prop inline at the `<Suspense>` boundary: 
 5. Don't include skeletons for inner Suspense content — those have their own boundaries.
 6. Reserve the right height. CLS comes from skeletons that are shorter than the real content.
 7. Dense placeholders should not animate. A grid of 28 shimmering covers reads as flicker rather than progress, so use a flat low-contrast fill when there are many items and keep the animated sweep for a handful of bars.
-8. Draw text as bars shorter than the line, but keep the line box: bar height plus vertical margin equals the text's line-height, so a 20px line gets a 14px bar with 3px above and below. Stack bars in a flex column so the margins don't collapse into each other.
+8. Draw text as bars shorter than the line, but keep the line box: bar height plus vertical margin equals the text's line-height, so a 20px line gets a 14px bar with 3px above and below. Stack bars in a flex column so the margins don't collapse into each other. In a block container a bar's bottom margin also collapses into the next block's top margin and the skeleton lands a few pixels short, so give a lone bar an explicit line box (`flex h-4 items-center`) instead of margins.
 9. Large blocks (images, buttons, avatars) get the flat fill too; only text lines animate, or the whole page pulses.
+10. Extract repeated visual primitives (a route line, a label-over-value stat, an icon detail row) as small components that export their own skeleton, and compose the larger skeletons from them. Three hand-measured copies drift apart; one measured primitive stays right everywhere it is used.
+11. Signs of a bad skeleton, all seen in review: a fallback shaped like one variant used for another (a baggage-shaped skeleton on the seats step), a fixed-height guess such as `h-[34rem]` standing in for a component whose frame could be composed from its real parts, a text fallback that later turns into different text, and a skeleton that lives in a different file from the component it stands in for.
 
 ## Group related components in one file
 

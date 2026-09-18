@@ -112,6 +112,8 @@ If a page uses a transition wrapper (e.g. `<ViewTransition>`), place it in the p
 
 A transition wrapper morphs the fallback into the content. That only looks right when the skeleton's box equals the content's box — a skeleton that is shorter or narrower shows up as a scaled ghost over the incoming content. Headings and labels that are the same in both states belong **outside** the boundary, otherwise they cross-fade with themselves and flicker. Sibling boundaries that resolve at different moments each start their own transition; that is fine as long as every skeleton is exact.
 
+Give every transition-wrapped boundary a host DOM element (`div`, `section`, `main`) immediately outside it in the page. When a page's root is the wrapper itself, the content-side `<ViewTransition>` becomes the topmost entering subtree on a warm, prefetched navigation and its enter animation runs even though no fallback was ever shown. The host suppresses that while leaving the fallback-to-content reveal intact. Measure it: count `document.startViewTransition` calls on a prefetched navigation; a warm step change should produce zero.
+
 ## Stable shell, suspending body
 
 Before designing a fallback, identify what is stable and what is data-dependent.
@@ -135,6 +137,15 @@ Do not render `<FeaturePanel>` in both `fallback` and final content. That duplic
 Use the app's real domain noun at implementation time (`PostPanel`, `MessageList`, `GroupEditor`, `EventDetails`, etc.); the neutral names here describe the reusable shape, not a component to copy literally.
 
 When the top data section has unknown final height and pushes the sections below, either reserve that height in the stable wrapper or group the affected sections in one boundary. Do not create two independent crossfades if the first one changes the second one's starting position.
+
+## One route, several variants
+
+A dynamic route that renders different UI per param value (a `[step]` wizard, a `[view]` toggle) has one prerendered shell for all variants, so its top-level fallback cannot know which variant is coming. Don't shape that fallback like one of the variants, and don't resolve the variant inside the fallback with pathname hooks or params promises behind nested `Suspense`. Use two levels:
+
+1. The route boundary's fallback is a neutral splash: the variant's frame (card, board) with the animated brand mark centered, `role="status"` and an `aria-label`.
+2. Inside `params.then(...)`, once the variant is known, a plain `<Suspense fallback={<VariantSkeleton ... />}>` wraps the data component with the exact skeleton for that variant.
+
+On a hard load the splash shows for a frame or two, then the exact skeleton. On a client navigation the shell is in the router cache and the variant skeleton renders straight away, or the content does when it was prefetched. Splitting the wizard into one route per step to get per-route shells is not worth it: four pages, four metadata exports, and the shared layout still owns the chrome.
 
 ## Audit smells
 
@@ -266,6 +277,8 @@ Fixes:
 
 To audit CLS, use React DevTools' Suspense panel to pin each boundary in its loading state and check vertical positions.
 
+Pending indicators are part of CLS too. A spinner inserted into a button widens it and an `auto` grid column moves everything beside it; give such buttons a fixed width that fits the spinner. A chip or badge that appears with data (seats left, a hold timer) gets a pill-shaped skeleton of the same height.
+
 ## Optimizing prefetching for high-value routes
 
 With `cacheComponents` + [`partialPrefetching`](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/partialPrefetching) enabled, a visible `<Link>` prefetches the destination's shared [App Shell](https://preview.nextjs.org/docs/app/glossary#app-shell) — enough to commit navigation instantly, with link-specific content streaming after. The default (`'auto'`) already does this; don't write `prefetch = 'auto'`.
@@ -273,6 +286,14 @@ With `cacheComponents` + [`partialPrefetching`](https://preview.nextjs.org/docs/
 Use `<Link prefetch={true}>` on high-value links to also resolve the destination's per-link data (`params`, `searchParams`, the full URL) at prefetch time. Each such link can wake the server for a prerender, so reserve it for routes users predictably visit next. See [Optimizing prefetching](https://preview.nextjs.org/docs/app/guides/optimizing-prefetching).
 
 Can't enable `partialPrefetching` app-wide yet? Opt in per route with `export const prefetch = 'partial'` on the destination, then drop the per-route exports once the global flag is on — see [Adopting Partial Prefetching](https://preview.nextjs.org/docs/app/guides/adopting-partial-prefetching) for the incremental path and [prefetch config](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/prefetch) for the options. To check that navigation actually feels instant, see [Validating instant navigation](#validating-instant-navigation).
+
+### Keep a live layer out of the prefetch without blocking it
+
+A `prefetch={true}` prerender advances through everything cached and stops at the first uncached read. One live read (who holds what right now, presence, stock) therefore turns the whole destination back into its fallback. Split it: render the section from cached, URL-keyed data, and read the live layer in a sibling that first `await`s [`unstable_navigation()`](https://preview.nextjs.org/docs/app/guides/optimizing-prefetching) from `next/cache` and then calls a `'use cache: private'` function. Content below the gate is skipped by prefetches but still counts as cacheable, and it runs and streams in on the actual navigation. `await connection()` or `io()` would instead mark the subtree dynamic and drop it from the App Shell too.
+
+Hand the gated value to the client as a promise and `use()` it inside a small `<Suspense>` whose fallback is the same UI without the live layer (seats shown as available, then marked held), so its arrival changes state, not layout. `unstable_navigation()` cannot be called inside a cache scope; keep it in the uncached wrapper, with the cache directive on the function below it.
+
+Two things defeat this prefetch. A server `redirect()` to a canonical URL inside the destination (for example to stamp derived data into the search params) is not followed by the prefetch and re-renders the whole tree on navigation, so write derived URL state from the links the user clicks instead. And chrome that must survive the navigation, such as a step bar, belongs in the layout and reads only the URL (`useParams` / `useSearchParams` under its own `Suspense`), never data that would make it re-suspend.
 
 ## Validating instant navigation
 
