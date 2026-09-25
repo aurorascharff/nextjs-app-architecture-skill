@@ -236,6 +236,47 @@ Wrap fallible sections in a Next.js-aware error boundary so one failure doesn't 
 </ErrorBoundary>
 ```
 
+Run `retry()` in a transition and keep that state in the fallback itself. The retry can suspend while the server renders again, so disable the button and show pending feedback until it settles:
+
+```tsx
+'use client';
+
+import { catchError, type ErrorInfo } from 'next/error';
+import { useTransition } from 'react';
+import { Button } from '@/components/ui/button';
+import { ErrorState } from '@/components/ui/error-state';
+import { Spinner } from '@/components/ui/spinner';
+
+type Props = {
+  body: string;
+  compact?: boolean;
+  title: string;
+};
+
+function ErrorFallback({ body, compact, title }: Props, { retry }: ErrorInfo) {
+  const [isPending, startTransition] = useTransition();
+
+  return (
+    <ErrorState body={body} compact={compact} title={title}>
+      <Button
+        onClick={() => startTransition(() => retry())}
+        disabled={isPending}
+        aria-busy={isPending}
+        size="sm"
+        variant="secondary"
+      >
+        {isPending && <Spinner />}
+        {isPending ? 'Retrying…' : 'Try again'}
+      </Button>
+    </ErrorState>
+  );
+}
+
+export const ErrorBoundary = catchError(ErrorFallback);
+```
+
+Keep this logic directly in `ErrorFallback`; a separate retry-button abstraction hides the transition that makes `retry()` feel responsive.
+
 Why not plain `react-error-boundary`? It catches Next's framework throws (so `notFound()` never reaches `not-found.tsx`), and its reset doesn't re-fetch server data. Background: [Error Handling in Next.js with catchError](https://aurorascharff.no/posts/error-handling-in-nextjs-with-catch-error/).
 
 Pair component-level boundaries with route-segment [`error.tsx`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/error) for unrecoverable errors; it also receives a `retry` callback.
