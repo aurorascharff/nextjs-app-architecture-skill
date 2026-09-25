@@ -37,13 +37,13 @@ Dynamic reads are the exception: use them for values that must be recomputed for
 | Data | Directive | Notes |
 | ---- | --------- | ----- |
 | Cacheable across users (public listings, computed pages) | [`'use cache'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache) | Add [`cacheTag`](https://preview.nextjs.org/docs/app/api-reference/functions/cacheTag) (a global + a scoped tag) and a [`cacheLife`](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/cacheLife) profile. |
-| Per-user / reads cookies, headers, session | [`'use cache: private'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-private) | Cached in the browser only, doesn't persist across reloads; never stored on the server. Still give it a `cacheTag` — sign-in and sign-out must `updateTag` it, or the session read stays stale until reload. |
-| Remote service, safe across users, worth durable storage | [`'use cache: remote'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-remote) | Protects against rate-limited third-party APIs. |
+| Per-user / reads cookies, headers, session | [`'use cache: private'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-private) | May reuse matching calls within one request and keep rendered output in browser memory for its `stale` time; it is not stored in the server cache across production requests or across reloads. |
+| Shared result that needs durable storage across server instances | [`'use cache: remote'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-remote) | Use when the hit rate and upstream cost justify a shared cache-handler lookup, including rate-limited services. |
 | Genuinely dynamic per request | none | Must be justified. Read inside `<Suspense>`; mutations use `refresh()` because no tag exists. |
 
-When a flow needs the same data twice — once to *decide* (should this section show, is this option still available) and once to *render* it — make it one cached read and let both callers hit it. Don't add a lighter "exists" query next to the full one; the second request is free from the cache, and the decision and the render can never disagree.
+When a flow needs the same data twice — once to *decide* and once to *render* — prefer one cached read so both callers share an identity when that entry is available. Add a lighter "exists" query only when it is measurably cheaper or has a different freshness requirement.
 
-Cache the **query** when its result should be reused across requests. Cache the **component** when rendering is expensive and props are stable (a nav, a trending sidebar). Don't `'use cache'` a component that already calls a `'use cache'` query — double-caching, no benefit.
+Cache the **query** when its result should be reused independently of UI. Cache the **component** when the rendered output is the reusable unit and its props are stable. Usually cache one layer; add a second cache scope only when it has a distinct key, lifetime, or measured rendering benefit.
 
 ## Keep a synchronous value out of the shell
 
@@ -51,21 +51,21 @@ You usually don't need this. A query that reads `cookies()`/`headers()` or await
 
 Prefer `io()` over [`connection()`](https://preview.nextjs.org/docs/app/api-reference/functions/connection): both exclude what follows from the shell, but `connection()` blocks prefetches while `io()` stays prefetchable. Reach for `connection()` only when rendering must wait for a real user request.
 
-### A live layer needs no marker, only its own boundary
+### A live async layer needs its own boundary
 
-A read that must be fresh on every request (stock, presence, a live count) is simply left uncached and given its own `<Suspense>` inside the cached component. Under Cache Components an uncached async read is dynamic by itself: it is left out of the static shell and of every prefetch, and streams in on the request. Don't add `connection()` or `io()` to say so. The one trap is a synchronous unstable value such as `new Date()` or `Math.random()`: the prerender flags it anywhere in an uncached path, even after awaited I/O. Don't compute it in the read at all. Let the database evaluate time with its own clock (`"expiresAt" > now()` in a raw query), or move the comparison inside a cache scope where the value is allowed, or, if the subtree really must be request-bound, mark it with `connection()`.
+For an async read that must be fresh on every request (stock, presence, a live count), leave it uncached and give it its own `<Suspense>` boundary. The official [Caching guide](https://preview.nextjs.org/docs/app/getting-started/caching#streaming-uncached-data) covers how its fallback joins the shell while the read streams at request time. Use `io()` or `connection()` only for the synchronous request-time cases described in their API references.
 
 ## Decide how to invalidate
 
 - [`updateTag(tag)`](https://preview.nextjs.org/docs/app/api-reference/functions/updateTag) — in **server actions**, when the user should see the result immediately (read-your-own-writes). Requires the query to carry a matching `cacheTag`.
-- [`revalidateTag(tag, 'max')`](https://preview.nextjs.org/docs/app/api-reference/functions/revalidateTag) — in **route handlers** (webhooks, cron) for stale-while-revalidate. The single-arg `revalidateTag(tag)` form is deprecated.
+- [`revalidateTag(tag, 'max')`](https://preview.nextjs.org/docs/app/api-reference/functions/revalidateTag) — when stale-while-revalidate is appropriate, including route handlers for webhooks or cron. The single-arg `revalidateTag(tag)` form is deprecated.
 - [`refresh()`](https://preview.nextjs.org/docs/app/api-reference/functions/refresh) — re-render the current route for the current user. Use it for deliberately dynamic reads with no tag; don't use it instead of `updateTag()` for cached reads.
 
 Tag, cache, invalidate: the `cacheTag` in the query and the `updateTag` in the action use the same string and live in the same feature folder.
 
-### Plain `use cache` is per instance in serverless
+### Choose remote caching from observed hit rate
 
-`'use cache'` stores entries in the memory of the process that computed them. On a serverless host every request can land on a different instance, so shared reads recompute on nearly every request even though they are "cached", and the per-link prefetch pays the same cost. Symptom: the same page takes the same time on every reload in production while it is instant on the second reload locally. Give shared reads (catalogs, computed offers, search results) `'use cache: remote'` so the platform's shared cache handler holds them; Vercel wires the Runtime Cache to it automatically, and without a configured handler `remote` falls back to the in-memory LRU, so local behavior is unchanged. Per-user reads keyed by the user's id stay on plain `'use cache'`, and only the request-bound read (the session) is `'use cache: private'`. Verify in production by requesting the same URL a few times with a fixed session cookie and comparing streamed time, not TTFB.
+The default shared store for `'use cache'` is per-instance memory and may be ephemeral on serverless. [`'use cache: remote'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-remote) moves entries to a durable cache handler shared across instances, with infrastructure cost and network latency. Use it for shared reads whose upstream cost and expected hit rate justify that trade-off; keep high-cardinality or per-user keys out of the remote cache unless measurement supports them. The [Caching guide](https://preview.nextjs.org/docs/app/getting-started/caching#where-cached-content-is-stored) describes each store.
 
 ### Tag by write frequency, not by screen
 

@@ -147,9 +147,11 @@ async function PostDetail({ id }: { id: string }) {
 }
 ```
 
-### Pass children or values across the boundary, not elements
+### Pass rendered content through slots
 
-A Server Component hands JSX to a Client Component as `children` or a named slot prop. Don't pass a *Client Component element* as a prop for the client side to clone or render (`<Button render={<Link … />} />` from a server file) — the element's type is a client reference the server render can't resolve. Render the link and give it the button's classes instead, or move the composition into the client file.
+Next.js supports passing server-rendered JSX to a Client Component as `children` or another named prop. Client Components may also be rendered directly from Server Components. Props that cross into a Client Component must follow React's serialization rules; use the official [interleaving and serialization guidance](https://preview.nextjs.org/docs/app/getting-started/server-and-client-components#interleaving-server-and-client-components) rather than treating all element props as invalid.
+
+This skill still prefers plain values and explicit `children` / slot props. If a client design component needs to inspect or clone an element rather than render an opaque slot, keep that composition in the client module or expose a value/class API whose boundary is clear.
 
 ### Server content as children of client components
 
@@ -244,7 +246,7 @@ Prefer one of these shapes:
 - Put the value in the URL/search params if navigation should own it.
 - Use a reducer where the same event that changes `filterKey` also clears `selectedItem`.
 
-Effects are for external systems: DOM APIs, subscriptions, timers, browser storage, analytics, or imperative libraries. They are not a cleanup lane for state that React could derive or reset structurally.
+Effects are for synchronizing with external systems: DOM APIs, subscriptions, timers, browser storage, analytics, or imperative libraries. For state that React can derive or reset structurally, follow [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect).
 
 ## Mutations
 

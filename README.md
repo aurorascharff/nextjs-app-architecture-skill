@@ -19,7 +19,7 @@ npx skills add aurorascharff/nextjs-app-architecture-skill
 
 ## Documentation
 
-The skill preserves the opinionated architecture rules and project-tested edge cases. Framework mechanics come from the project's version-matched Next.js docs, following the [AI Coding Agents guide](https://preview.nextjs.org/docs/app/guides/ai-agents), rather than being redefined here.
+The skill preserves the opinionated architecture rules and project-tested edge cases. Framework mechanics come from the project's version-matched Next.js docs, following the [AI Coding Agents guide](https://preview.nextjs.org/docs/app/guides/ai-agents), rather than being redefined here. Canary-only APIs link to `preview.nextjs.org`.
 
 ## References
 

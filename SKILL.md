@@ -4,14 +4,14 @@ description: Build or audit Next.js 16 App Router apps using a next-beats-style 
 license: MIT
 metadata:
   author: aurorascharff
-  version: "1.3.14"
+  version: "1.3.15"
 ---
 
 # Next.js App Architecture
 
 A workflow for building and auditing Next.js 16+ App Router apps so they follow one consistent, feature-sliced RSC architecture like `next-beats`.
 
-**Follow the workflow below step by step** — it produces the invariants by construction. Load the reference a step names for the decision it depends on. Get framework _mechanics_ (API signatures, config options, hook contracts) from the linked docs — don't restate or improvise them.
+**Follow the workflow below step by step** — it produces the invariants by construction. Load the reference a step names for the decision it depends on. Get framework _mechanics_ (API signatures, config options, hook contracts) from the linked docs — don't restate or improvise them. Links for canary-only Next.js APIs use `preview.nextjs.org`.
 
 ## Prerequisite
 

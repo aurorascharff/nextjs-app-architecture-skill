@@ -15,7 +15,7 @@ Interaction decisions on top of the architecture: which feedback mechanism to re
 
 ### Name the signal when a subtree has more than one pending source
 
-`data-pending` bubbles through CSS, so every descendant that sets it participates. `useLinkStatus` sets it on any pending link, which means `group-has-data-pending:` on a page wrapper also fires for ordinary navigation and dims content that is not being refetched. When a subtree can be pending for more than one reason, give the reason you are reacting to its own attribute (`data-filtering`, `data-saving`) and key the ancestor off that.
+`data-pending` bubbles through CSS, so every descendant that sets it participates. [`useLinkStatus`](https://preview.nextjs.org/docs/app/api-reference/functions/use-link-status) exposes pending link navigation, which means a broad `group-has-data-pending:` selector can also react to ordinary navigation. When a subtree can be pending for more than one reason, give the reason you are reacting to its own attribute (`data-filtering`, `data-saving`) and key the ancestor off that.
 
 ### Two things to get right with `useOptimistic`
 
@@ -64,14 +64,14 @@ Validate locally before submitting when the missing field is already on the clie
 
 ### Search and filter forms
 
-A plain `<form method="get">` submits as a document request, so the page reloads and every boundary shows its skeleton again. Make these forms client navigations:
+A plain `<form method="get">` uses native browser navigation. Use a client navigation when the interaction should preserve the App Router experience:
 
 - **Defaults come from the URL.** Read `useSearchParams()` in the client form and key the `<form>` on `params.toString()`, so the fields follow the URL and remount with fresh `defaultValue`s. The form then lives in the route shell and renders at once on navigation. A form that takes its defaults from a `searchParams.then()` sits inside the URL boundary and re-skeletons on every search.
 - **Prefetch while the user is still choosing.** On `onChange`, build the destination URL and call `router.prefetch(href)`.
 - **Submit in a transition.** `onSubmit` prevents the default and runs `startTransition(() => router.push(href))`. The submit button's `useFormStatus` spinner already reflects that transition; don't add a second one.
 - **Fade the current results.** Render the results as children of the form's client shell under `data-pending={isPending ? '' : undefined}` with `transition-opacity data-pending:opacity-60`. The old results stay on screen, dimmed, until the new ones commit.
 
-`next/form` gives the client navigation and the button spinner on its own; use the client shell when the results should dim.
+[`next/form`](https://preview.nextjs.org/docs/app/api-reference/components/form) gives a string-action form client navigation and prefetching. Put `useFormStatus` in a child button for pending feedback; use the client shell when the current results should dim.
 
 ## Toasts
 
@@ -85,25 +85,22 @@ A plain `<form method="get">` submits as a document request, so the page reloads
 
 Gate behind a confirmation dialog whose confirm button owns the pending state, toast `error` from the result, and navigate away only after `{ ok: true }`. Mind two edge cases:
 
-- **Don't `redirect()` inside an action called from a click or dialog.** It throws, which stops the client from toasting or closing the dialog, and a `try/catch` around the call mistakes it for a failure. Return `{ ok: true }` and navigate with `router.push()`. (Form actions are different — see `references/queries-actions.md`.)
+- **Don't use [`redirect()`](https://preview.nextjs.org/docs/app/api-reference/functions/redirect) inside an action when the click/dialog caller must toast, close, or do other success work.** `redirect()` terminates that action path. Return `{ ok: true }` and navigate with `router.push()`. (Form actions are different — see `references/queries-actions.md`.)
 - **Don't wrap the whole action call in `useTransition`** inside the dialog — with view transitions on, that animates the background UI behind the dialog. Track pending with `useState` / `useOptimistic(false)` and reserve `startTransition` for the post-success navigation only.
 
 ## Blocking a write in flight
 
-A full-screen overlay on link navigation is never worth it: the App Shell commits the destination at once, with a fallback at worst, so the overlay flashes for a frame. Reserve a blocker for the one write that must not be double-submitted or abandoned (confirm, pay). While it is pending, replace the action buttons with the progress indicator so nothing is left to click.
+Reserve a full-screen blocker for a write that must not be double-submitted or abandoned (confirm, pay), rather than ordinary link navigation. While it is pending, replace the action buttons with the progress indicator so nothing is left to click.
 
-- **Render it from a layout that survives the redirect.** Anything inside the finishing page's subtree, portaled or not, is deleted with that page, and React does not animate a nested boundary's exit inside a deleted subtree.
-- **Show it with `useOptimistic` from inside the action.** The optimistic value appears at once and reverts in the same transition that commits the redirect, which is what lets the overlay crossfade out and a shared element (`<ViewTransition name share>`) morph into the result page.
-- **Keep transitions short and snapshot-safe.** Use the shared timing tokens and avoid `backdrop-filter` on the captured element, or the result page's Suspense reveal interrupts the running transition and the settle flickers.
-- **Don't add a `beforeunload` guard.** The server completes the write whether the tab stays open or not, and a deploy or code reload makes the framework hard-navigate mid-action, which turns the guard into a spurious "Leave site?" dialog.
+If the blocker participates in a route transition, render it from a layout that survives the navigation and verify the exact animation in the browser. Follow the official React [`<ViewTransition>` reference](https://react.dev/reference/react/ViewTransition) and the companion [React View Transitions skill](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-view-transitions) for transition mechanics; this skill only decides where the persistent UI belongs.
 
 ## Leaving a finished flow
 
-Redirect from the completing action with `RedirectType.replace`, so the final step is replaced by the result page instead of sitting one swipe behind it. Don't add an "already done, redirect to the result" check to the steps: it breaks doing the same flow again on purpose, and a `redirect()` in a destination is never followed by a prefetch.
+Redirect from the completing action with [`RedirectType.replace`](https://preview.nextjs.org/docs/app/api-reference/functions/redirect#parameters), so the final step is replaced by the result page instead of sitting one swipe behind it. Don't add an "already done, redirect to the result" check unless the product must forbid repeating the flow.
 
 ## View transitions: portaled / floating UI
 
-Portaled elements (toasts, dialogs, popovers, dropdowns, tooltips) flicker during route transitions unless excluded. Apply `viewTransitionName: 'none'` to the portal root. When the portal also needs stacking control (z-index) or has translucent layers (backdrop-blur), give it a *named* transition and neutralize it in CSS instead — `::view-transition-group(name) { animation: none; z-index: … }` can do things `'none'` can't. See the [React View Transitions skill](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-view-transitions).
+Portals and floating UI need explicit testing during route transitions. Keep the architecture decision here: persistent overlays belong in a surviving layout. Follow the official React [`<ViewTransition>` reference](https://react.dev/reference/react/ViewTransition) and the companion [React View Transitions skill](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-view-transitions) for naming, portal handling, stacking, and animation details.
 
 ## The action-prop pattern
 

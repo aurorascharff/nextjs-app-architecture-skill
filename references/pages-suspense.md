@@ -23,7 +23,7 @@ Don't hand-write `{ params: Promise<{ id: string }> }` — the generated types s
 
 ## Keep pages synchronous
 
-Use `params.then()` instead of `await params`. Content above the `.then()` pre-renders into the static shell; content inside it suspends.
+This skill keeps the page synchronous and composes `params.then()` inside `<Suspense>` instead of awaiting route props at the top. The same structure is shown in the official [interactive apps guide](https://preview.nextjs.org/docs/app/guides/interactive-apps#step-1-stream-slow-data-with-suspense): static page chrome can return first while the resolved subtree suspends and streams.
 
 ```tsx
 import { Suspense } from 'react';
@@ -74,13 +74,13 @@ Use `Promise.all([params, searchParams])` when both are needed. Avoid nested `.t
 
 ### Metadata, static params, and `notFound()`
 
-- [`generateMetadata`](https://preview.nextjs.org/docs/app/api-reference/functions/generate-metadata) runs before render, so `await params` is fine there — it's a separate async function, not the page body, so it doesn't make the page dynamic.
+- [`generateMetadata`](https://preview.nextjs.org/docs/app/api-reference/functions/generate-metadata) is a separate entry point, so awaiting `params` there does not require making the page component async. Follow its Cache Components section for static versus streamed metadata behavior.
 - Export [`generateStaticParams`](https://preview.nextjs.org/docs/app/api-reference/functions/generate-static-params) from a `[slug]` page/layout to pre-build a known set of slugs; with `cacheComponents` + `'use cache'` they land in the static shell. It does **not** change the page signature — `params` is still a Promise, still consumed with `params.then()`.
 - A query that can't find its resource calls [`notFound()`](https://preview.nextjs.org/docs/app/api-reference/functions/not-found), which bubbles to the nearest [`not-found.tsx`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/not-found). Don't try/catch it — use [`unstable_rethrow`](https://preview.nextjs.org/docs/app/api-reference/functions/unstable_rethrow) if you must catch nearby.
 
 ## Prefer a page boundary over `loading.tsx`
 
-Put the boundary in the page next to the `params.then()` / `searchParams.then()` it covers, rather than adding a route-segment `loading.tsx`. A page boundary keeps the fallback beside the JSX it stands in for, lets sibling sections share one boundary or split into several, and can be wrapped in `<ViewTransition>` so the reveal animates. A `loading.tsx` renders outside the page's own tree, so a transition wrapper inside the page cannot animate the swap out of it, and one fallback has to cover the whole route.
+This skill prefers a boundary in the page next to the `params.then()` / `searchParams.then()` it covers. That keeps the fallback beside the JSX it stands in for and lets sibling sections reveal together or separately. Use the [`loading.tsx` convention](https://preview.nextjs.org/docs/app/api-reference/file-conventions/loading) when a segment-level fallback is the intended loading unit.
 
 ## The page owns the Suspense boundary
 
@@ -108,11 +108,7 @@ export function PostDetailSkeleton() { ... }
 </Suspense>
 ```
 
-If a page uses a transition wrapper (e.g. `<ViewTransition>`), place it in the page next to the `<Suspense>` boundary. Feature components render content and skeletons, not transition wrappers.
-
-A transition wrapper morphs the fallback into the content. That only looks right when the skeleton's box equals the content's box — a skeleton that is shorter or narrower shows up as a scaled ghost over the incoming content. Headings and labels that are the same in both states belong **outside** the boundary, otherwise they cross-fade with themselves and flicker. Sibling boundaries that resolve at different moments each start their own transition; that is fine as long as every skeleton is exact.
-
-Give every transition-wrapped boundary a host DOM element (`div`, `section`, `main`) immediately outside it in the page. When a page's root is the wrapper itself, the content-side `<ViewTransition>` becomes the topmost entering subtree on a warm, prefetched navigation and its enter animation runs even though no fallback was ever shown. The host suppresses that while leaving the fallback-to-content reveal intact. Measure it: count `document.startViewTransition` calls on a prefetched navigation; a warm step change should produce zero.
+If a page uses a transition wrapper, place it in the page next to the `<Suspense>` boundary. Feature components render content and skeletons, not transition wrappers. Follow the official React [`<ViewTransition>` reference](https://react.dev/reference/react/ViewTransition) and the companion [React View Transitions skill](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-view-transitions) for animation mechanics; verify warm and cold navigations in the browser instead of encoding unverified transition behavior here.
 
 ## Stable shell, suspending body
 
@@ -140,12 +136,12 @@ When the top data section has unknown final height and pushes the sections below
 
 ## One route, several variants
 
-A dynamic route that renders different UI per param value (a `[step]` wizard, a `[view]` toggle) has one prerendered shell for all variants, so its top-level fallback cannot know which variant is coming. Don't shape that fallback like one of the variants, and don't resolve the variant inside the fallback with pathname hooks or params promises behind nested `Suspense`. Use two levels:
+When a dynamic route renders different UI per param value (a `[step]` wizard, a `[view]` toggle), the outer fallback may render before the variant is resolved. Don't shape it like one specific variant. Use two levels:
 
 1. The route boundary's fallback is a neutral splash: the variant's frame (card, board) with the animated brand mark centered, `role="status"` and an `aria-label`.
 2. Inside `params.then(...)`, once the variant is known, a plain `<Suspense fallback={<VariantSkeleton ... />}>` wraps the data component with the exact skeleton for that variant.
 
-On a hard load the splash shows for a frame or two, then the exact skeleton. On a client navigation the shell is in the router cache and the variant skeleton renders straight away, or the content does when it was prefetched. Splitting the wizard into one route per step to get per-route shells is not worth it: several near-identical pages, and the shared layout still owns the chrome.
+Verify both direct visits and client navigations: the neutral outer fallback should remain valid until the variant-specific skeleton or content is available. Keep one dynamic route when the steps share one cohesive page structure; split routes only when the product structure warrants it.
 
 ## Audit smells
 
@@ -316,7 +312,7 @@ Fixes:
 - Move headings **outside** boundaries when their position depends on data above them.
 - For unknown-height top sections, group everything below in one boundary so siblings stream together.
 
-To audit CLS, use React DevTools' Suspense panel to pin each boundary in its loading state and check vertical positions.
+To audit CLS, use the React DevTools Suspense panel to pin each boundary in its loading state and check vertical positions. The Next.js [instant navigation guide](https://preview.nextjs.org/docs/app/guides/instant-navigation#visualize-loading-states-with-the-nextjs-devtools) documents this workflow alongside the Navigation Inspector.
 
 Pending indicators are part of CLS too. A spinner inserted into a button widens it and an `auto` grid column moves everything beside it; give such buttons a fixed width that fits the spinner. A chip or badge that appears with data (a count, a countdown) gets a pill-shaped skeleton of the same height.
 
@@ -330,26 +326,24 @@ Can't enable `partialPrefetching` app-wide yet? Opt in per route with `export co
 
 ### Three render stages, two gates
 
-A route renders in three stages: the App Shell that every `<Link>` into the route prefetches, the per-link prefetch a `<Link prefetch={true}>` adds for its URL, and the navigation itself. Two gates from `next/cache` move cacheable content later without making it dynamic:
+The [Optimizing prefetching guide](https://preview.nextjs.org/docs/app/guides/optimizing-prefetching) distinguishes the shared App Shell, an optional per-link prefetch, and the navigation. Two canary APIs move cacheable work to a later stage without making it request-dependent:
 
 | Gate | Kept out of | Rendered by |
 | --- | --- | --- |
-| `await unstable_prefetch()` | the App Shell | a per-link prefetch, or the navigation |
-| `await unstable_navigation()` | the App Shell and per-link prefetches | the navigation only |
+| [`await unstable_prefetch()`](https://preview.nextjs.org/docs/app/api-reference/functions/prefetch) | the App Shell | a per-link prefetch, or the navigation |
+| [`await unstable_navigation()`](https://preview.nextjs.org/docs/app/api-reference/functions/navigation) | the App Shell and per-link prefetches | the navigation only |
 
-Use `unstable_prefetch()` above session reads (`cookies()`-based lookups such as the user's own list) so the route's shell stays static and CDN-cacheable while `prefetch={true}` links still resolve them before the click. Use `unstable_navigation()` for content that is personal or live enough that a list of links should not compute it at all until one is clicked. Neither may be awaited inside a cache scope: put the gate in the uncached wrapper and the cache directive on the function below it. Both ship as unstable in Next 16.4 canaries.
+Use `unstable_prefetch()` for cacheable content that should stay out of the shared App Shell but may be resolved by `prefetch={true}`. Use `unstable_navigation()` for cacheable content that should be excluded from every prefetch and produced only after navigation. Neither may be awaited inside a cache scope; put the gate in an uncached wrapper and the cache directive on the function below it. Both are canary APIs, so read their `preview.nextjs.org` references before using them.
 
 ### Keep a live layer out of the prefetch without blocking it
 
-A `prefetch={true}` prerender advances through everything cached and stops at the first uncached read. One live read (presence, live availability) therefore turns the whole destination back into its fallback. Split it: render the section from cached, URL-keyed data, and read the live layer in a sibling that first `await`s [`unstable_navigation()`](https://preview.nextjs.org/docs/app/guides/optimizing-prefetching) from `next/cache` and then calls a `'use cache: private'` function. Content below the gate is skipped by prefetches but still counts as cacheable, and it runs and streams in on the actual navigation. `await connection()` or `io()` would instead mark the subtree dynamic and drop it from the App Shell too.
+A per-link prerender advances through static or cached work and stops at uncached reads, showing the nearest `<Suspense>` fallback. Keep a live read (presence, live availability) in its own sibling boundary so it does not reduce the useful cached content available before the click. Use `unstable_navigation()` only when the work is cacheable but intentionally excluded from prefetches; ordinary uncached async work already stops the prerender. See [Exclude content from a prefetch](https://preview.nextjs.org/docs/app/guides/optimizing-prefetching#exclude-content-from-a-prefetch).
 
-Hand the gated value to the client as a promise and `use()` it inside a small `<Suspense>` whose fallback is the same UI without the live layer (items in their cached state, then marked with the live status), so its arrival changes state, not layout. `unstable_navigation()` cannot be called inside a cache scope; keep it in the uncached wrapper, with the cache directive on the function below it.
-
-Two things defeat this prefetch. A server `redirect()` to a canonical URL inside the destination (for example to stamp derived data into the search params) is not followed by the prefetch and re-renders the whole tree on navigation, so write derived URL state from the links the user clicks instead. And chrome that must survive the navigation, such as a progress indicator, belongs in the layout and reads only the URL (`useParams` / `useSearchParams` under its own `Suspense`), never data that would make it re-suspend.
+If the live value is handed to a Client Component as a promise, resolve it with `use()` inside a small `<Suspense>` whose fallback preserves the same layout. Persistent navigation chrome belongs in a layout that survives the navigation.
 
 ## Validating instant navigation
 
-With `cacheComponents` on, Next.js already validates every Page and Default segment in development. You don't add `export const instant` or `experimental.instantInsights` to switch that on — read what it reports and fix it with the rules above: cache the read, or narrow the boundary.
+With `cacheComponents` on, Next.js [validates every Page and Default segment in development by default](https://preview.nextjs.org/docs/app/guides/instant-navigation#validate-instant-navigation). You don't add `export const instant` or `experimental.instantInsights` to switch that on — read what it reports and fix it with the rules above: cache the read, or narrow the boundary.
 
 Reach for [`export const instant = false`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant#disabling-instant) only as an escape hatch — to exempt a blocking ancestor layout while still asserting the pages beneath it, or to opt a route out of static-shell validation. It can't be used in a Client Component.
 

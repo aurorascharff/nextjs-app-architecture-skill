@@ -30,8 +30,8 @@ Keep behavior in the layer that owns it:
 
 The async feature component owns the initial read and the library's hydration provider. The page remains a synchronous composition surface and owns the feature's Suspense boundary.
 
-- With SWR, seed the exact key read by `useSWR`. Use `preload` with `cacheData` when later `mutate(key)` calls must update the seeded entry itself.
-- With TanStack Query, seed the same query key read by the client query and render the client subtree inside `HydrationBoundary`.
+- With SWR, seed the exact key read by `useSWR`; follow the official [SWR + Next.js guidance](https://swr.vercel.app/docs/with-nextjs) for fallback data and client hooks.
+- With TanStack Query, seed the same query key read by the client query and follow its [Advanced Server Rendering guide](https://tanstack.com/query/latest/docs/framework/react/guides/advanced-ssr) for `HydrationBoundary` and ownership.
 
 Do not move the initial read to the browser just because the feature also has a client cache.
 
@@ -41,7 +41,7 @@ The server cache and browser cache have independent freshness policies. Do not m
 
 For tag-driven data, a mutation updates the client cache for immediate feedback and invalidates the same server tag used by the seeded read. For a time-driven server read, choose its `cacheLife` from the server data's freshness requirement.
 
-TanStack Query hydration adds one coupling: the hydration timestamp must advance whenever the seeded data advances. For tag-driven reads, cache the timestamp with the same tags as the data. For time-driven reads, derive the data and timestamp from the same cached snapshot. Do not cache a `QueryClient` or dehydrated payload.
+Treat library hydration metadata as part of the seeded snapshot. Follow the client's official hydration rules rather than deriving its freshness settings from `cacheLife`, and do not cache a `QueryClient` or dehydrated payload as the server data source.
 
 ## Mutate without drift
 

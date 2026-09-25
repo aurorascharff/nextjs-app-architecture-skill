@@ -24,7 +24,7 @@ export async function getFeed(userId: string) {
 
 ## Cache keys are the arguments
 
-A `'use cache'` function's arguments are its cache key, so shape them deliberately.
+A `'use cache'` function's arguments and captured values participate in its [cache key](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache#cache-keys), so shape them deliberately.
 
 Take normalized primitives, not the params object:
 
@@ -47,7 +47,7 @@ Use [`cache()`](https://react.dev/reference/react/cache) from React only for **r
 
 ## Actions
 
-Create `features/<domain>/<domain>-actions.ts`. Mark with `'use server'` at the top. Always:
+Create `features/<domain>/<domain>-actions.ts`. Mark with `'use server'` at the top. Follow the [Server Actions security guidance](https://preview.nextjs.org/docs/app/guides/server-actions#security), and always:
 
 1. Verify auth.
 2. Validate input with your schema validator.
@@ -136,7 +136,7 @@ export type ActionResult<T = void> = { ok: true; data?: T } | { ok: false; error
 
 Toast on `ok: false` from the client. Skip success toasts when an optimistic UI already shows the result.
 
-`redirect()` is fine inside a `<form action>` / `useActionState` action: the form handles the throw and the success branch is the new page. For actions called from a click or a dialog, return `{ ok: true }` and navigate on the client — see `references/ux-patterns.md`.
+[`redirect()`](https://preview.nextjs.org/docs/app/api-reference/functions/redirect) is fine inside a `<form action>` / `useActionState` action. For actions called from a click or a dialog, this skill returns `{ ok: true }` and navigates on the client so the caller can finish its local feedback — see `references/ux-patterns.md`.
 
 A shared `ActionResult<T>` is optional — a per-action inline union is just as good, and often clearer when the payload has a natural name: `return { ok: true as const, playlist }` reads better than a generic `data`. What matters is that fallible actions return a discriminated union the client can narrow on, not that every action shares one type.
 
