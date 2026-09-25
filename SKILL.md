@@ -4,7 +4,7 @@ description: Build or audit Next.js 16 App Router apps using a next-beats-style 
 license: MIT
 metadata:
   author: aurorascharff
-  version: "1.3.10"
+  version: "1.3.14"
 ---
 
 # Next.js App Architecture
