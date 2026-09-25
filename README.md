@@ -8,7 +8,7 @@ An agent skill for building or auditing Next.js 16+ App Router apps. It packages
 npx skills add aurorascharff/nextjs-app-architecture-skill
 ```
 
-## The six principles
+## Rules
 
 - **Pages are synchronous compositors.** They don't fetch, they compose.
 - **Async components fetch their own data.** Co-locate the read with the JSX.
@@ -17,19 +17,9 @@ npx skills add aurorascharff/nextjs-app-architecture-skill
 - **Suspense boundaries go at the page level.** The page designs the loading sequence.
 - **Client boundaries are leaf nodes.** Push `'use client'` as deep as it can go.
 
-## Prerequisite
+## Documentation
 
-Before using the skill on a project, follow the [Next.js AI Coding Agents guide](https://preview.nextjs.org/docs/app/guides/ai-agents) so the agent reads version-matched Next.js docs from `AGENTS.md` / bundled docs instead of stale training data.
-
-## What it covers
-
-- **Feature folders** — domain ownership, cross-domain product experiences, merging sub-concepts into a parent, and file naming.
-- **Queries** — `import 'server-only'`, plain async reads by default, selective React `cache()` only for proven same-request dedup, and `'use cache'` + `cacheTag` + `cacheLife` for Cache Components.
-- **Actions** — `'use server'`, input validation, tag invalidation under Cache Components, calling from client components.
-- **Components** — async server components that receive IDs/parsed values, sibling skeletons, single-use helpers, the client boundary, the `use()` + promise-prop pattern, live data via polling.
-- **Pages** — sync page composition, `params.then()` for static-shell preservation, Suspense boundary placement, CLS prevention, error boundaries, audit smells.
-- **Cache Components** — when to opt in, the static-shell model, `'use cache'` variants, build constraints.
-- **UX patterns** — `useOptimistic`, toasts, pending state, destructive-action flows, the action-prop pattern, URL pagination.
+The skill preserves the opinionated architecture rules and project-tested edge cases. Framework mechanics come from the project's version-matched Next.js docs, following the [AI Coding Agents guide](https://preview.nextjs.org/docs/app/guides/ai-agents), rather than being redefined here.
 
 ## References
 
@@ -51,7 +41,7 @@ The `SKILL.md` overview is always loaded; references split into two zones so the
 
 ## Background reading
 
-- [Component Architeture for React Server Components](https://aurorascharff.no/posts/component-architecture-for-react-server-components/)
+- [Component Architecture for React Server Components](https://aurorascharff.no/posts/component-architecture-for-react-server-components/)
 - [Server and Client Component Composition in Practice](https://aurorascharff.no/posts/server-client-component-composition-in-practice/)
 - [Building Design Components with Action Props using Async React](https://aurorascharff.no/posts/building-design-components-with-action-props-using-async-react/)
 - [Error Handling in Next.js with catchError](https://aurorascharff.no/posts/error-handling-in-nextjs-with-catch-error/)
