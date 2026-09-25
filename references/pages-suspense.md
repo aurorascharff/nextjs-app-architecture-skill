@@ -328,6 +328,17 @@ Use `<Link prefetch={true}>` on high-value links to also resolve the destination
 
 Can't enable `partialPrefetching` app-wide yet? Opt in per route with `export const prefetch = 'partial'` on the destination, then drop the per-route exports once the global flag is on — see [Adopting Partial Prefetching](https://preview.nextjs.org/docs/app/guides/adopting-partial-prefetching) for the incremental path and [prefetch config](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/prefetch) for the options. To check that navigation actually feels instant, see [Validating instant navigation](#validating-instant-navigation).
 
+### Three render stages, two gates
+
+A route renders in three stages: the App Shell that every `<Link>` into the route prefetches, the per-link prefetch a `<Link prefetch={true}>` adds for its URL, and the navigation itself. Two gates from `next/cache` move cacheable content later without making it dynamic:
+
+| Gate | Kept out of | Rendered by |
+| --- | --- | --- |
+| `await unstable_prefetch()` | the App Shell | a per-link prefetch, or the navigation |
+| `await unstable_navigation()` | the App Shell and per-link prefetches | the navigation only |
+
+Use `unstable_prefetch()` above session reads (`cookies()`-based lookups such as the user's own list) so the route's shell stays static and CDN-cacheable while `prefetch={true}` links still resolve them before the click. Use `unstable_navigation()` for content that is personal or live enough that a list of links should not compute it at all until one is clicked. Neither may be awaited inside a cache scope: put the gate in the uncached wrapper and the cache directive on the function below it. Both ship as unstable in Next 16.4 canaries.
+
 ### Keep a live layer out of the prefetch without blocking it
 
 A `prefetch={true}` prerender advances through everything cached and stops at the first uncached read. One live read (presence, live availability) therefore turns the whole destination back into its fallback. Split it: render the section from cached, URL-keyed data, and read the live layer in a sibling that first `await`s [`unstable_navigation()`](https://preview.nextjs.org/docs/app/guides/optimizing-prefetching) from `next/cache` and then calls a `'use cache: private'` function. Content below the gate is skipped by prefetches but still counts as cacheable, and it runs and streams in on the actual navigation. `await connection()` or `io()` would instead mark the subtree dynamic and drop it from the App Shell too.

@@ -53,7 +53,7 @@ Prefer `io()` over [`connection()`](https://preview.nextjs.org/docs/app/api-refe
 
 ### A live layer needs no marker, only its own boundary
 
-A read that must be fresh on every request (stock, presence, a live count) is simply left uncached and given its own `<Suspense>` inside the cached component. Under Cache Components an uncached async read is dynamic by itself: it is left out of the static shell and of every prefetch, and streams in on the request. Don't add `connection()` or `io()` to say so. The one trap is a synchronous unstable value such as `new Date()`: the prerender flags it if it runs before the first awaited I/O, so evaluate it after the first `await` (run the dated query second), or move it inside a cache scope where it is allowed.
+A read that must be fresh on every request (stock, presence, a live count) is simply left uncached and given its own `<Suspense>` inside the cached component. Under Cache Components an uncached async read is dynamic by itself: it is left out of the static shell and of every prefetch, and streams in on the request. Don't add `connection()` or `io()` to say so. The one trap is a synchronous unstable value such as `new Date()` or `Math.random()`: the prerender flags it anywhere in an uncached path, even after awaited I/O. Don't compute it in the read at all. Let the database evaluate time with its own clock (`"expiresAt" > now()` in a raw query), or move the comparison inside a cache scope where the value is allowed, or, if the subtree really must be request-bound, mark it with `connection()`.
 
 ## Decide how to invalidate
 
