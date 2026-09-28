@@ -15,7 +15,7 @@ A workflow for building and auditing Next.js 16+ App Router apps so they follow 
 
 ## Prerequisite
 
-Before changing a Next.js app, make sure the project is set up for AI agents to read version-matched docs. Follow the [AI Coding Agents guide](https://preview.nextjs.org/docs/app/guides/ai-agents): prefer the project's `AGENTS.md` / bundled docs, and create or refresh them when missing. Install the [`next-dev-loop`](https://github.com/vercel/next.js/tree/canary/skills/next-dev-loop) skill alongside this one and use it to verify every change in the running `next dev`, including the instant-navigation insights it reports. Then use this skill for architecture decisions.
+Before changing a Next.js app, make sure the project is set up for AI agents to read version-matched docs. Follow the [AI Coding Agents guide](https://preview.nextjs.org/docs/app/guides/ai-agents): prefer the project's `AGENTS.md` / bundled docs, and create or refresh them when missing. Then use this skill for architecture decisions.
 
 ## Architecture target
 
@@ -70,7 +70,7 @@ Run these in order for build-from-scratch, feature work, or audits. Each step na
 7. **Add interaction** (if any): optimistic updates, pending state, toasts, confirmation.
    → `references/ux-patterns.md`.
    ✓ Feedback isn't doubled; optimistic reducers/actions live with the feature; URL/search params own shareable state; client effects synchronize external systems, not derived React state.
-8. **Verify** against the checklist below before declaring done, and in the running app with `next-dev-loop`: read the validation insights for every route you touched (→ `references/pages-suspense.md`, Validating instant navigation).
+8. **Verify** against the checklist below before declaring done.
 
 ## Verify before done
 

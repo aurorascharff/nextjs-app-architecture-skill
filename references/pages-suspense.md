@@ -367,7 +367,7 @@ With `cacheComponents` on, Next.js [validates every Page and Default segment in 
 
 Reach for [`export const instant = false`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant#disabling-instant) only as an escape hatch — to exempt a blocking ancestor layout while still asserting the pages beneath it, or to opt a route out of static-shell validation. It can't be used in a Client Component.
 
-Verify in the running app, not only by reading the diff. Install the [`next-dev-loop`](https://github.com/vercel/next.js/tree/canary/skills/next-dev-loop) skill (`npx skills add vercel/next.js --skill next-dev-loop`) and use it after each change to read what `next dev` reports for the routes you touched. The validation insights name the component that blocks; two causes that the architecture rules above do not cover are:
+The [validation insights](https://preview.nextjs.org/docs/app/guides/instant-navigation#validate-instant-navigation) name the component that blocks a route. Two causes that the rules above do not cover:
 
 - [`generateMetadata` reading `params` or `searchParams`](https://nextjs.org/docs/messages/blocking-prerender-metadata-runtime) keeps the route's metadata out of the per-link prefetch. Use a static `metadata` export on routes whose prefetch matters.
 - [A URL hook in a Client Component outside `<Suspense>`](https://nextjs.org/docs/messages/blocking-prerender-client-hook), such as `usePathname()` or `useSearchParams()`, makes the whole route blocking. Wrap the consumer in a boundary whose fallback has the same shape, the way a `NavLink` renders its link without the active state until the pathname resolves, or read `window.location` in an effect when the value is only needed after hydration.
