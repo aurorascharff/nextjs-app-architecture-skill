@@ -333,7 +333,27 @@ The [Optimizing prefetching guide](https://preview.nextjs.org/docs/app/guides/op
 | [`await unstable_prefetch()`](https://preview.nextjs.org/docs/app/api-reference/functions/prefetch) | the App Shell | a per-link prefetch, or the navigation |
 | [`await unstable_navigation()`](https://preview.nextjs.org/docs/app/api-reference/functions/navigation) | the App Shell and per-link prefetches | the navigation only |
 
-Use `unstable_prefetch()` for cacheable content that should stay out of the shared App Shell but may be resolved by `prefetch={true}`. Use `unstable_navigation()` for cacheable content that should be excluded from every prefetch and produced only after navigation. Neither may be awaited inside a cache scope; put the gate in an uncached wrapper and the cache directive on the function below it. Both are canary APIs, so read their `preview.nextjs.org` references before using them.
+Use `unstable_prefetch()` for cacheable content that should stay out of the shared App Shell but may be resolved by `prefetch={true}`. Use `unstable_navigation()` for cacheable content that should be excluded from every prefetch and produced only after navigation. Both are canary APIs, so read their `preview.nextjs.org` references before using them.
+
+Neither may be awaited inside a cache scope. The shape that follows from that: the exported query is an uncached wrapper that awaits the gate and resolves request data, then calls a cached function with plain arguments. Session data is read in the wrapper, through [`'use cache: private'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-private) or `cookies()`, and passed in as an argument so the cached read is keyed per user without reading the request itself ([extract and pass](https://preview.nextjs.org/docs/app/guides/optimizing-prefetching#include-session-data-in-the-shell)):
+
+```ts
+// features/post/post-queries.ts
+export async function getComments(postId: string) {
+  await unstable_navigation();
+  const user = await getCurrentUser(); // 'use cache: private'
+  return getCommentsForUser(postId, user.id);
+}
+
+async function getCommentsForUser(postId: string, userId: string) {
+  'use cache';
+  cacheLife('hours');
+  cacheTag(postTags.comments(postId));
+  return db.comments.list({ postId, userId });
+}
+```
+
+The component that calls `getComments` sits in a page-owned `<Suspense>` like any other feature component; the gate changes when it renders, not where it lives. The cached function keeps its lifetime, so the second visitor gets the comments from the cache even though no prefetch ever produced them.
 
 ### Keep a live layer out of the prefetch without blocking it
 
@@ -347,7 +367,16 @@ With `cacheComponents` on, Next.js [validates every Page and Default segment in 
 
 Reach for [`export const instant = false`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant#disabling-instant) only as an escape hatch — to exempt a blocking ancestor layout while still asserting the pages beneath it, or to opt a route out of static-shell validation. It can't be used in a Client Component.
 
+Verify in the running app, not only by reading the diff. Install the [`next-dev-loop`](https://github.com/vercel/next.js/tree/canary/skills/next-dev-loop) skill (`npx skills add vercel/next.js --skill next-dev-loop`) and use it after each change to read what `next dev` reports for the routes you touched. The validation insights name the component that blocks; two causes that the architecture rules above do not cover are:
+
+- [`generateMetadata` reading `params` or `searchParams`](https://nextjs.org/docs/messages/blocking-prerender-metadata-runtime) keeps the route's metadata out of the per-link prefetch. Use a static `metadata` export on routes whose prefetch matters.
+- [A URL hook in a Client Component outside `<Suspense>`](https://nextjs.org/docs/messages/blocking-prerender-client-hook), such as `usePathname()` or `useSearchParams()`, makes the whole route blocking. Wrap the consumer in a boundary whose fallback has the same shape, the way a `NavLink` renders its link without the active state until the pathname resolves, or read `window.location` in an effect when the value is only needed after hydration.
+
 To see what actually lands in the initial UI, use the [Navigation Inspector](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant#inspecting-loading-states). To keep it from regressing, lock it in with [`instant()` from `@next/playwright`](https://preview.nextjs.org/docs/app/guides/instant-navigation#prevent-regressions-with-e2e-tests).
+
+## Hidden routes stay mounted
+
+Next.js keeps recently visited segments mounted inside a hidden [`<Activity>`](https://preview.nextjs.org/docs/app/guides/preserving-ui-state) so their state and scroll survive back and forward navigation. Two consequences for this architecture: an uncontrolled input in a shared shell can keep a DOM value that no longer matches the URL, so sync it from the URL in a layout effect on mount; and end-to-end tests must use [visibility-aware selectors](https://preview.nextjs.org/docs/app/guides/preserving-ui-state#use-visibility-aware-selectors), because the hidden copy of a row or heading is still in the DOM.
 
 ## Never wrap the entire page in a Suspense fallback
 
