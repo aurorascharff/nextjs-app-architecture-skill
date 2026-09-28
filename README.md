@@ -36,6 +36,7 @@ The `SKILL.md` overview is always loaded; references split into two zones so the
 
 **Instant Apps** (opt-in, load only when optimizing for instant-feeling apps):
 
+- [`references/instant-navigation.md`](references/instant-navigation.md) — `prefetch={true}`, the three render stages and their gates, validating navigations, hidden routes.
 - [`references/cache-components.md`](references/cache-components.md) — `cacheComponents: true`, the static shell, which reads to cache, `'use cache'` variants, `cacheTag` / `cacheLife`, `updateTag` / `revalidateTag`, and `io()` vs `connection()`.
 - [`references/single-page-applications.md`](references/single-page-applications.md) — SPA-style client caching and navigation patterns.
 - [`references/ux-patterns.md`](references/ux-patterns.md) — `useOptimistic`, toasts, pending state via `data-pending`, destructive flows, the action-prop pattern, URL pagination, `useFormStatus`.

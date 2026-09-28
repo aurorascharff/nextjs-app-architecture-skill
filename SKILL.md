@@ -65,7 +65,7 @@ Run these in order for build-from-scratch, feature work, or audits. Each step na
    → `references/components.md`; for a client data library or strict-SPA/CSR feature → `references/single-page-applications.md`.
    ✓ Component receives IDs/handles/parsed filters or already-resolved records, not `params`; skeleton is a sibling export at the end; no alias skeleton wrappers.
 6. **Compose the page.** `app/<route>/page.tsx`: synchronous, `params.then()` / `Promise.all(...).then(...)`, place Suspense around data bodies, and wrap fallible sections in an error boundary.
-   → `references/pages-suspense.md`.
+   → `references/pages-suspense.md`; with `cacheComponents: true`, also → `references/instant-navigation.md` for which links prefetch and which reads wait for the navigation.
    ✓ Route props become plain values; stable cards/sections wrap Suspense when they set layout; boundaries stay visible at the page.
 7. **Add interaction** (if any): optimistic updates, pending state, toasts, confirmation.
    → `references/ux-patterns.md`.
@@ -88,6 +88,7 @@ Inspect the diff against every invariant — each is checkable by reading the ch
 - [ ] Every `*-queries.ts` starts with `import 'server-only'`; every `*-actions.ts` with `'use server'`.
 - [ ] With `cacheComponents: true`, reusable reads use `'use cache'` / `cacheTag` / `cacheLife`, or `'use cache: private'` / `'use cache: remote'` when appropriate; any dynamic read is intentional and justified.
 - [ ] Mutations touching cached reads call `updateTag()` / `revalidateTag(..., 'max')` for the matching tags; `refresh()` is not a substitute for tag invalidation.
+- [ ] `unstable_prefetch()` / `unstable_navigation()` are awaited in an uncached query wrapper, never inside a cache scope, and `prefetch={true}` is reserved for links users predictably follow.
 - [ ] Action files are named `<folder>-actions.ts`; no entity-owned sub-concept spawned its own folder, and cross-domain product features do not take ownership of entity queries/actions.
 - [ ] Features with both server tags and client query keys define them once in a pure `<domain>-cache.ts`; queries, actions, hydration, query options, and hooks import from it.
 - [ ] Feature-local client-support files sit in the smallest fitting place: query options at the feature root, `use-*` hook wrappers in `hooks/`, leaf components in `components/`, and shared support only after real cross-feature reuse.
@@ -100,7 +101,8 @@ Inspect the diff against every invariant — each is checkable by reading the ch
 - **`references/feature-folders.md`** — where code goes: folder layout, cache contracts, naming, and merging sub-concepts.
 - **`references/queries-actions.md`** — query/action rules: server-only, dedup, validation, invalidation, return shape.
 - **`references/components.md`** — server/client boundary, skeletons, `use()`, single-use helpers, live data.
-- **`references/pages-suspense.md`** — page composition, `params.then()`, Suspense placement, CLS, error boundaries, prefetch.
+- **`references/pages-suspense.md`** — page composition, `params.then()`, Suspense placement, CLS, error boundaries.
+- **`references/instant-navigation.md`** — prefetching decisions: `prefetch={true}`, the three render stages and their gates, validating what a navigation shows, hidden routes.
 - **`references/cache-components.md`** — the `cacheComponents` decisions: which reads to cache, which directive to use, how to invalidate.
 - **`references/single-page-applications.md`** — client cache decisions: placement, server seeding, Cache Components coordination, hydration, and mutations.
 - **`references/ux-patterns.md`** — interaction decisions: optimistic vs pending vs inline error, toasts, action-prop, confirmations.
