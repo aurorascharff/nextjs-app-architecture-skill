@@ -367,11 +367,6 @@ With `cacheComponents` on, Next.js [validates every Page and Default segment in 
 
 Reach for [`export const instant = false`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant#disabling-instant) only as an escape hatch — to exempt a blocking ancestor layout while still asserting the pages beneath it, or to opt a route out of static-shell validation. It can't be used in a Client Component.
 
-The [validation insights](https://preview.nextjs.org/docs/app/guides/instant-navigation#validate-instant-navigation) name the component that blocks a route. Two causes that the rules above do not cover:
-
-- [`generateMetadata` reading `params` or `searchParams`](https://nextjs.org/docs/messages/blocking-prerender-metadata-runtime) keeps the route's metadata out of the per-link prefetch. Use a static `metadata` export on routes whose prefetch matters.
-- [A URL hook in a Client Component outside `<Suspense>`](https://nextjs.org/docs/messages/blocking-prerender-client-hook), such as `usePathname()` or `useSearchParams()`, makes the whole route blocking. Wrap the consumer in a boundary whose fallback has the same shape, the way a `NavLink` renders its link without the active state until the pathname resolves, or read `window.location` in an effect when the value is only needed after hydration.
-
 To see what actually lands in the initial UI, use the [Navigation Inspector](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant#inspecting-loading-states). To keep it from regressing, lock it in with [`instant()` from `@next/playwright`](https://preview.nextjs.org/docs/app/guides/instant-navigation#prevent-regressions-with-e2e-tests).
 
 ## Hidden routes stay mounted
