@@ -33,8 +33,6 @@ export async function Comments({ postId }: { postId: string }) {
 
 Don't add a second query whose only job is to hold the gate (`getComments` calling `getCommentsCached`). The gate is a render-stage decision, so it belongs where the render happens; the query stays reusable from other stages and other callers. A `'use cache'` query called below the gate keeps its lifetime and still serves the next visitor, and a query that needs session or cookie values still uses the extract-and-pass wrapper from `references/cache-components.md` for those, just without the gate in it.
 
-When the gated value is a promise handed to a Client Component instead of awaited, chain the gate in front of it where the promise is created: `holds={unstable_navigation().then(() => getSeatHolds(id))}`.
-
 ### Which links resolve their data early
 
 A reasonable split for a list-and-detail app: primary navigation and the rows in view get `prefetch={true}`, so a row opens with its header already resolved while the heavy body waits behind `unstable_navigation()`; long-tail links (tags, labels, author links) prefetch on intent, arming `prefetch={true}` after a short hover or on focus. Measure the prefetch payload before widening the first group.
