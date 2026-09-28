@@ -154,9 +154,9 @@ All three fetches start at once. The outer boundary waits only for `Message`; `R
 
 Content that shares the first section's reveal (a reply form under a message body) can live in the same component as that section; anything with its own latency goes in a nested sibling boundary.
 
-### Keep list chrome out of the rows boundary
+### Persistent chrome renders above the boundary
 
-A sticky list header (title, select-all, bulk actions, pager) that lives inside the rows boundary is replaced every time the rows stream in. Render it as a sibling above the boundary instead. State the header shares with the rows, such as the current selection, lives in a small client provider that wraps both, keyed by the page so pagination starts clean. Controls that depend on row data (select-all needs the page's ids, the pager needs the total) get their own small `<Suspense>` inside the header, with the same control disabled as the fallback.
+Chrome that should survive a data load (a section header, a toolbar) is replaced every time the boundary resolves if it renders inside it. Render it as a sibling above the boundary. Client state shared between the chrome and the data below it lives in a provider that wraps both, keyed by the route values that should reset it. A control inside the chrome that needs the data gets its own small `<Suspense>`, with the same control disabled as the fallback.
 
 ## One route, several variants
 
