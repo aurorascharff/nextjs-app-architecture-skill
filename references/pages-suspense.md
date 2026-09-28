@@ -156,9 +156,7 @@ Content that shares the first section's reveal (a reply form under a message bod
 
 ### Keep list chrome out of the rows boundary
 
-A sticky list header (title, select-all, bulk actions, pager) should not be replaced when the rows stream in, or it flickers on every load. Render it as a sibling above the rows boundary, not inside it. Selection is client state: a small provider wraps the header and the rows boundary, keyed by the page (`key={\`${mailbox}:${page}\`}`) so pagination and mailbox changes start with nothing selected; the header and each row read it through a hook. Only the controls that depend on row data (select-all needs the page's ids, the pager needs the total) wrap themselves in their own small `<Suspense>`, passed into the client header as server-rendered slots, with a fallback that is the same control disabled, never an empty spacer.
-
-The row can stay the only client component in the list, holding its own optimistic state for actions such as star or archive. A single client list component that owns selection, an optimistic copy of every row and the header pulls the header into the rows boundary; a provider plus one small client leaf per row keeps it out.
+A sticky list header (title, select-all, bulk actions, pager) that lives inside the rows boundary is replaced every time the rows stream in. Render it as a sibling above the boundary instead. State the header shares with the rows, such as the current selection, lives in a small client provider that wraps both, keyed by the page so pagination starts clean. Controls that depend on row data (select-all needs the page's ids, the pager needs the total) get their own small `<Suspense>` inside the header, with the same control disabled as the fallback.
 
 ## One route, several variants
 

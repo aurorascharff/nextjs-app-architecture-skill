@@ -33,10 +33,6 @@ export async function Comments({ postId }: { postId: string }) {
 
 Don't add a second query whose only job is to hold the gate (`getComments` calling `getCommentsCached`). The gate is a render-stage decision, so it belongs where the render happens; the query stays reusable from other stages and other callers. A `'use cache'` query called below the gate keeps its lifetime and still serves the next visitor, and a query that needs session or cookie values still uses the extract-and-pass wrapper from `references/cache-components.md` for those, just without the gate in it.
 
-### Which links resolve their data early
-
-A reasonable split for a list-and-detail app: primary navigation and the rows in view get `prefetch={true}`, so a row opens with its header already resolved while the heavy body waits behind `unstable_navigation()`; long-tail links (tags, labels, author links) prefetch on intent, arming `prefetch={true}` after a short hover or on focus. Measure the prefetch payload before widening the first group.
-
 ### Keep a live layer out of the prefetch without blocking it
 
 A per-link prerender advances through static or cached work and stops at uncached reads, showing the nearest `<Suspense>` fallback. Keep a live read (presence, live availability) in its own sibling boundary so it does not reduce the useful cached content available before the click. Use `unstable_navigation()` only when the work is cacheable but intentionally excluded from prefetches; ordinary uncached async work already stops the prerender. See [Exclude content from a prefetch](https://preview.nextjs.org/docs/app/guides/optimizing-prefetching#exclude-content-from-a-prefetch).
