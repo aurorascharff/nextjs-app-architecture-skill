@@ -37,8 +37,7 @@ When the gated value is a promise handed to a Client Component instead of awaite
 
 ### Which links resolve their data early
 
-- **Primary navigation and every list row in view** get `prefetch={true}`. A row's destination should open with its header already on screen, so the header query is cacheable and the heavy body sits behind `unstable_navigation()`; a page of prefetched rows then costs a few kilobytes each and never downloads bodies.
-- **Long-tail links** (tags, labels, author links, everything with many possible destinations) prefetch on intent: arm `prefetch={true}` after a short hover or on focus, `null` otherwise.
+A reasonable split for a list-and-detail app: primary navigation and the rows in view get `prefetch={true}`, so a row opens with its header already resolved while the heavy body waits behind `unstable_navigation()`; long-tail links (tags, labels, author links) prefetch on intent, arming `prefetch={true}` after a short hover or on focus. Measure the prefetch payload before widening the first group.
 
 ### Keep a live layer out of the prefetch without blocking it
 
@@ -53,10 +52,6 @@ With `cacheComponents` on, Next.js [validates every Page and Default segment in 
 Reach for [`export const instant = false`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant#disabling-instant) only as an escape hatch — to exempt a blocking ancestor layout while still asserting the pages beneath it, or to opt a route out of static-shell validation. It can't be used in a Client Component.
 
 To see what actually lands in the initial UI, use the [Navigation Inspector](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant#inspecting-loading-states). To keep it from regressing, lock it in with an end-to-end test (→ `references/testing.md`).
-
-## Back and forward gestures
-
-`overscroll-behavior: contain` or `none` on the scroll container also swallows the trackpad's horizontal swipe, so two-finger back and forward stop working. Contain only the axis you scroll (`overscroll-behavior-y: contain`).
 
 ## Hidden routes stay mounted
 

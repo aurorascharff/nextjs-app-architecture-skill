@@ -158,7 +158,7 @@ Content that shares the first section's reveal (a reply form under a message bod
 
 A sticky list header (title, select-all, bulk actions, pager) should not be replaced when the rows stream in, or it flickers on every load. Render it as a sibling above the rows boundary, not inside it. Selection is client state: a small provider wraps the header and the rows boundary, keyed by the page (`key={\`${mailbox}:${page}\`}`) so pagination and mailbox changes start with nothing selected; the header and each row read it through a hook. Only the controls that depend on row data (select-all needs the page's ids, the pager needs the total) wrap themselves in their own small `<Suspense>`, passed into the client header as server-rendered slots, with a fallback that is the same control disabled, never an empty spacer.
 
-The row stays the one client component in the list when it needs optimistic star or archive state and undo toasts. A list component that owns selection, an optimistic copy of every row and the header in one client tree is the smell; a provider plus one small client leaf per row is the fix.
+The row can stay the only client component in the list, holding its own optimistic state for actions such as star or archive. A single client list component that owns selection, an optimistic copy of every row and the header pulls the header into the rows boundary; a provider plus one small client leaf per row keeps it out.
 
 ## One route, several variants
 
