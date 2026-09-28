@@ -367,11 +367,11 @@ With `cacheComponents` on, Next.js [validates every Page and Default segment in 
 
 Reach for [`export const instant = false`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant#disabling-instant) only as an escape hatch — to exempt a blocking ancestor layout while still asserting the pages beneath it, or to opt a route out of static-shell validation. It can't be used in a Client Component.
 
-To see what actually lands in the initial UI, use the [Navigation Inspector](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant#inspecting-loading-states). To keep it from regressing, lock it in with [`instant()` from `@next/playwright`](https://preview.nextjs.org/docs/app/guides/instant-navigation#prevent-regressions-with-e2e-tests).
+To see what actually lands in the initial UI, use the [Navigation Inspector](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant#inspecting-loading-states). To keep it from regressing, lock it in with an end-to-end test (→ `references/testing.md`).
 
 ## Hidden routes stay mounted
 
-Next.js keeps recently visited segments mounted inside a hidden [`<Activity>`](https://preview.nextjs.org/docs/app/guides/preserving-ui-state) so their state and scroll survive back and forward navigation. Two consequences for this architecture: an uncontrolled input in a shared shell can keep a DOM value that no longer matches the URL, so sync it from the URL in a layout effect on mount; and end-to-end tests must use [visibility-aware selectors](https://preview.nextjs.org/docs/app/guides/preserving-ui-state#use-visibility-aware-selectors), because the hidden copy of a row or heading is still in the DOM.
+Next.js keeps recently visited segments mounted inside a hidden [`<Activity>`](https://preview.nextjs.org/docs/app/guides/preserving-ui-state) so their state and scroll survive back and forward navigation. An uncontrolled input in a shared shell can therefore keep a DOM value that no longer matches the URL; sync it from the URL in a layout effect on mount. For what this means when locating elements in tests, see `references/testing.md`.
 
 ## Never wrap the entire page in a Suspense fallback
 

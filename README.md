@@ -31,6 +31,7 @@ The `SKILL.md` overview is always loaded; references split into two zones so the
 - [`references/queries-actions.md`](references/queries-actions.md) — server-only queries, selective same-request dedup, server actions, validation, and cache/tag invalidation.
 - [`references/components.md`](references/components.md) — async server components, skeletons without alias wrappers, client boundary, promise + `use()`, single-use helpers, polling.
 - [`references/pages-suspense.md`](references/pages-suspense.md) — page composition, `PageProps` / `LayoutProps`, `params.then()`, Suspense placement, CLS prevention, error boundaries.
+- [`references/testing.md`](references/testing.md) — end-to-end tests: the loading sequence with `instant()`, hidden routes, mutations.
 - [`references/example.md`](references/example.md) — next-beats invariant map and supporting patterns.
 
 **Instant Apps** (opt-in, load only when optimizing for instant-feeling apps):

@@ -70,7 +70,9 @@ Run these in order for build-from-scratch, feature work, or audits. Each step na
 7. **Add interaction** (if any): optimistic updates, pending state, toasts, confirmation.
    → `references/ux-patterns.md`.
    ✓ Feedback isn't doubled; optimistic reducers/actions live with the feature; URL/search params own shareable state; client effects synchronize external systems, not derived React state.
-8. **Verify** against the checklist below before declaring done.
+8. **Verify** against the checklist below before declaring done. When the change touches a loading sequence, lock it in with an end-to-end test.
+   → `references/testing.md`.
+   ✓ The test asserts which content is available before uncached work resolves, using visibility-aware locators.
 
 ## Verify before done
 
@@ -102,4 +104,5 @@ Inspect the diff against every invariant — each is checkable by reading the ch
 - **`references/cache-components.md`** — the `cacheComponents` decisions: which reads to cache, which directive to use, how to invalidate.
 - **`references/single-page-applications.md`** — client cache decisions: placement, server seeding, Cache Components coordination, hydration, and mutations.
 - **`references/ux-patterns.md`** — interaction decisions: optimistic vs pending vs inline error, toasts, action-prop, confirmations.
+- **`references/testing.md`** — end-to-end tests: asserting the loading sequence with `instant()`, locating content across hidden routes, testing mutations.
 - **`references/example.md`** — the next-beats reference app: invariant → file map, for seeing any rule in real code.
