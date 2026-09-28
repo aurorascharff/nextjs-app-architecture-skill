@@ -85,6 +85,8 @@ Inspect the diff against every invariant — each is checkable by reading the ch
 - [ ] Stable wrappers/cards/chrome sit outside Suspense; fallback and final content do not duplicate the same outer card.
 - [ ] Every component has its real `*Skeleton` in the same file, at the end; no tiny skeleton aliases just to pass props.
 - [ ] Skeleton and content are the same height (measured), section headings sit outside the boundary, and sections that can be empty reserve their space.
+- [ ] Sections below a variable-height section are nested sibling boundaries inside it, not awaited by it and not passed through it as children.
+- [ ] `unstable_prefetch()` / `unstable_navigation()` are awaited in the component before its query call; no wrapper query exists just to hold the gate.
 - [ ] Every `*-queries.ts` starts with `import 'server-only'`; every `*-actions.ts` with `'use server'`.
 - [ ] With `cacheComponents: true`, reusable reads use `'use cache'` / `cacheTag` / `cacheLife`, or `'use cache: private'` / `'use cache: remote'` when appropriate; any dynamic read is intentional and justified.
 - [ ] Mutations touching cached reads call `updateTag()` / `revalidateTag(..., 'max')` for the matching tags; `refresh()` is not a substitute for tag invalidation.

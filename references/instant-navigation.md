@@ -21,15 +21,24 @@ The [Optimizing prefetching guide](https://preview.nextjs.org/docs/app/guides/op
 
 Use `unstable_prefetch()` for cacheable content that should stay out of the shared App Shell but may be resolved by `prefetch={true}`; use `unstable_navigation()` for cacheable content that should be produced only after navigation. Both are canary APIs, so read their `preview.nextjs.org` references before using them.
 
-Neither may be awaited inside a cache scope, so the exported query is an uncached wrapper that awaits the gate, resolves session data ([extract and pass](https://preview.nextjs.org/docs/app/guides/optimizing-prefetching#include-session-data-in-the-shell)), and calls a `'use cache'` function with plain arguments:
+Neither may be awaited inside a cache scope. Await the gate in the async server component, right before it calls its query, and leave the query a plain function:
 
-```ts
-export async function getComments(postId: string) {
+```tsx
+export async function Comments({ postId }: { postId: string }) {
   await unstable_navigation();
-  const user = await getCurrentUser(); // 'use cache: private'
-  return getCommentsForUser(postId, user.id); // 'use cache' + cacheTag, keeps its lifetime
+  const comments = await getComments(postId); // plain query, or 'use cache' called below the gate
+  ...
 }
 ```
+
+Don't add a second query whose only job is to hold the gate (`getComments` calling `getCommentsCached`). The gate is a render-stage decision, so it belongs where the render happens; the query stays reusable from other stages and other callers. A `'use cache'` query called below the gate keeps its lifetime and still serves the next visitor, and a query that needs session or cookie values still uses the extract-and-pass wrapper from `references/cache-components.md` for those, just without the gate in it.
+
+When the gated value is a promise handed to a Client Component instead of awaited, chain the gate in front of it where the promise is created: `holds={unstable_navigation().then(() => getSeatHolds(id))}`.
+
+### Which links resolve their data early
+
+- **Primary navigation and every list row in view** get `prefetch={true}`. A row's destination should open with its header already on screen, so the header query is cacheable and the heavy body sits behind `unstable_navigation()`; a page of prefetched rows then costs a few kilobytes each and never downloads bodies.
+- **Long-tail links** (tags, labels, author links, everything with many possible destinations) prefetch on intent: arm `prefetch={true}` after a short hover or on focus, `null` otherwise.
 
 ### Keep a live layer out of the prefetch without blocking it
 
@@ -44,6 +53,10 @@ With `cacheComponents` on, Next.js [validates every Page and Default segment in 
 Reach for [`export const instant = false`](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant#disabling-instant) only as an escape hatch — to exempt a blocking ancestor layout while still asserting the pages beneath it, or to opt a route out of static-shell validation. It can't be used in a Client Component.
 
 To see what actually lands in the initial UI, use the [Navigation Inspector](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/instant#inspecting-loading-states). To keep it from regressing, lock it in with an end-to-end test (→ `references/testing.md`).
+
+## Back and forward gestures
+
+`overscroll-behavior: contain` or `none` on the scroll container also swallows the trackpad's horizontal swipe, so two-finger back and forward stop working. Contain only the axis you scroll (`overscroll-behavior-y: contain`).
 
 ## Hidden routes stay mounted
 

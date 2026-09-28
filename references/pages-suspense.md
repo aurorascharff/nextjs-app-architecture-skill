@@ -134,6 +134,32 @@ Use the app's real domain noun at implementation time (`PostPanel`, `MessageList
 
 When the top data section has unknown final height and pushes the sections below, either reserve that height in the stable wrapper or group the affected sections in one boundary. Do not create two independent crossfades if the first one changes the second one's starting position.
 
+### Nested boundaries: siblings, not children
+
+"Group the sections below" means the first section renders directly in the outer boundary and each later section renders as a **sibling** inside its own nested boundary:
+
+```tsx
+<Suspense fallback={<MessageSkeleton />}>
+  <Message id={id} />
+  <Suspense fallback={<RepliesSkeleton />}>
+    <Replies id={id} />
+  </Suspense>
+</Suspense>
+```
+
+All three fetches start at once. The outer boundary waits only for `Message`; `Replies` can't reveal before it, so nothing jumps, but its data is usually ready by the time the body settles. Two shapes look similar and are wrong:
+
+- One component that awaits everything and renders it in one go. The page waits for the slowest read before showing anything.
+- The later sections passed as `children` through the async first component. Their render, and so their fetch, starts only after the first component resolves, so the sections load in series.
+
+Content that shares the first section's reveal (a reply form under a message body) can live in the same component as that section; anything with its own latency goes in a nested sibling boundary.
+
+### Keep list chrome out of the rows boundary
+
+A sticky list header (title, select-all, bulk actions, pager) should not be replaced when the rows stream in, or it flickers on every load. Keep it a server component outside the rows boundary and derive its state from the URL: a `?selected=a,b` param drives the checked rows, the "N selected" count and the bulk toolbar, so none of that needs client state. Only the controls that depend on row data (select-all needs the page's ids, the pager needs the total) wrap themselves in their own small `<Suspense>`, with a fallback that is the same control disabled, never an empty spacer. Pager links and completed bulk actions link back to the URL without `selected`, so pagination resets the selection.
+
+Leave the row itself as the one client component in the list when it needs optimistic star or archive state and undo toasts. A tall stack of client wrappers for selection, optimistic lists and header state is the smell; URL state plus one small client leaf is the fix.
+
 ## One route, several variants
 
 When a dynamic route renders different UI per param value (a `[step]` wizard, a `[view]` toggle), the outer fallback may render before the variant is resolved. Don't shape it like one specific variant. Use two levels:

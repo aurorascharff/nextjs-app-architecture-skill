@@ -82,15 +82,17 @@ Import the real skeleton and pass the prop inline at the `<Suspense>` boundary: 
 
 ### Skeleton design checklist
 
+The structural items (1–6, 8, 10, 11) are rules; the visual ones (7, 9) are the default to reach for, and a product's own design direction wins over them.
+
 1. Match the real component's layout: flex direction, gaps, padding, breakpoints.
-2. Include all structural elements: avatar circles, action button placeholders, image squares.
+2. Include the structural elements that set layout: avatar circles, image squares, the first line of a heading. Don't draw buttons, secondary rows, or form controls; reserve their height with an empty box so the fallback stays the size of the finished section without pretending to be it.
 3. Responsive visibility must match (`hidden sm:block` in the real component → same in the skeleton).
 4. Show 2–5 placeholders for variable-length lists, not the real count.
 5. Don't include skeletons for inner Suspense content — those have their own boundaries.
 6. Reserve the right height. CLS comes from skeletons that are shorter than the real content.
-7. Dense placeholders should not animate. A grid of 28 shimmering covers reads as flicker rather than progress, so use a flat low-contrast fill when there are many items and keep the animated sweep for a handful of bars.
+7. Default to a flat, static, low-contrast fill. A grid of shimmering covers or a paragraph of animated bars reads as flicker rather than progress. If anything animates, it is a handful of bars, never a whole page.
 8. Draw text as bars shorter than the line, but keep the line box: bar height plus vertical margin equals the text's line-height, so a 20px line gets a 14px bar with 3px above and below. Stack bars in a flex column so the margins don't collapse into each other. In a block container a bar's bottom margin also collapses into the next block's top margin and the skeleton lands a few pixels short, so give a lone bar an explicit line box (`flex h-4 items-center`) instead of margins.
-9. Large blocks (images, buttons, avatars) get the flat fill too; only text lines animate, or the whole page pulses.
+9. Body text is three to five bars at the real line height with varied widths. Not one bar per line (too busy), not one tall block (too abstract). When the real content can be shorter than the bars, give the real container the same `min-h` as the skeleton so a short entry doesn't pull the sections below it up.
 10. Extract repeated visual primitives (a route line, a label-over-value stat, an icon detail row) as small components that export their own skeleton, and compose the larger skeletons from them. Three hand-measured copies drift apart; one measured primitive stays right everywhere it is used.
 11. Signs of a bad skeleton, all seen in review: a fallback shaped like one variant used for another (one step's skeleton shown for another step), a fixed-height guess such as `h-[34rem]` standing in for a component whose frame could be composed from its real parts, a text fallback that later turns into different text, and a skeleton that lives in a different file from the component it stands in for.
 
