@@ -87,7 +87,7 @@ Import the real skeleton and pass the prop inline at the `<Suspense>` boundary: 
 3. Responsive visibility must match (`hidden sm:block` in the real component → same in the skeleton).
 4. Show 2–5 placeholders for variable-length lists, not the real count.
 5. Don't include skeletons for inner Suspense content — those have their own boundaries.
-6. Reserve the right height. CLS comes from skeletons that are shorter than the real content.
+6. Reserve the right height. CLS comes from skeletons that are shorter than the real content, and from real content that can be shorter than its skeleton; in that case give the real container the skeleton's `min-h`.
 7. Dense placeholders should not animate. A grid of 28 shimmering covers reads as flicker rather than progress, so use a flat low-contrast fill when there are many items and keep the animated sweep for a handful of bars.
 8. Draw text as bars shorter than the line, but keep the line box: bar height plus vertical margin equals the text's line-height, so a 20px line gets a 14px bar with 3px above and below. Stack bars in a flex column so the margins don't collapse into each other. In a block container a bar's bottom margin also collapses into the next block's top margin and the skeleton lands a few pixels short, so give a lone bar an explicit line box (`flex h-4 items-center`) instead of margins.
 9. Large blocks (images, buttons, avatars) get the flat fill too; only text lines animate, or the whole page pulses.

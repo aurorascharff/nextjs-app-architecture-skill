@@ -21,15 +21,17 @@ The [Optimizing prefetching guide](https://preview.nextjs.org/docs/app/guides/op
 
 Use `unstable_prefetch()` for cacheable content that should stay out of the shared App Shell but may be resolved by `prefetch={true}`; use `unstable_navigation()` for cacheable content that should be produced only after navigation. Both are canary APIs, so read their `preview.nextjs.org` references before using them.
 
-Neither may be awaited inside a cache scope, so the exported query is an uncached wrapper that awaits the gate, resolves session data ([extract and pass](https://preview.nextjs.org/docs/app/guides/optimizing-prefetching#include-session-data-in-the-shell)), and calls a `'use cache'` function with plain arguments:
+Neither may be awaited inside a cache scope. Await the gate in the async server component, right before it calls its query, and leave the query a plain function:
 
-```ts
-export async function getComments(postId: string) {
+```tsx
+export async function Comments({ postId }: { postId: string }) {
   await unstable_navigation();
-  const user = await getCurrentUser(); // 'use cache: private'
-  return getCommentsForUser(postId, user.id); // 'use cache' + cacheTag, keeps its lifetime
+  const comments = await getComments(postId); // plain query, or 'use cache' called below the gate
+  ...
 }
 ```
+
+Don't add a second query whose only job is to hold the gate (`getComments` calling `getCommentsCached`). The gate is a render-stage decision, so it belongs where the render happens; the query stays reusable from other stages and other callers. A `'use cache'` query called below the gate keeps its lifetime and still serves the next visitor, and a query that needs session or cookie values still uses the extract-and-pass wrapper from `references/cache-components.md` for those, just without the gate in it.
 
 ### Keep a live layer out of the prefetch without blocking it
 

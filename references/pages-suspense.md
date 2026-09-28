@@ -134,6 +134,30 @@ Use the app's real domain noun at implementation time (`PostPanel`, `MessageList
 
 When the top data section has unknown final height and pushes the sections below, either reserve that height in the stable wrapper or group the affected sections in one boundary. Do not create two independent crossfades if the first one changes the second one's starting position.
 
+### Nested boundaries: siblings, not children
+
+"Group the sections below" means the first section renders directly in the outer boundary and each later section renders as a **sibling** inside its own nested boundary:
+
+```tsx
+<Suspense fallback={<MessageSkeleton />}>
+  <Message id={id} />
+  <Suspense fallback={<RepliesSkeleton />}>
+    <Replies id={id} />
+  </Suspense>
+</Suspense>
+```
+
+All three fetches start at once. The outer boundary waits only for `Message`; `Replies` can't reveal before it, so nothing jumps, but its data is usually ready by the time the body settles. Two shapes look similar and are wrong:
+
+- One component that awaits everything and renders it in one go. The page waits for the slowest read before showing anything.
+- The later sections passed as `children` through the async first component. Their render, and so their fetch, starts only after the first component resolves, so the sections load in series.
+
+Content that shares the first section's reveal (a reply form under a message body) can live in the same component as that section; anything with its own latency goes in a nested sibling boundary.
+
+### Persistent chrome renders above the boundary
+
+Chrome that should survive a data load (a section header, a toolbar) is replaced every time the boundary resolves if it renders inside it. Render it as a sibling above the boundary. Client state shared between the chrome and the data below it lives in a provider that wraps both, keyed by the route values that should reset it. A control inside the chrome that needs the data gets its own small `<Suspense>`, with the same control disabled as the fallback.
+
 ## One route, several variants
 
 When a dynamic route renders different UI per param value (a `[step]` wizard, a `[view]` toggle), the outer fallback may render before the variant is resolved. Don't shape it like one specific variant. Use two levels:
