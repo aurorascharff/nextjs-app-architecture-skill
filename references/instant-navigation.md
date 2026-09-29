@@ -8,6 +8,8 @@ With `cacheComponents` + [`partialPrefetching`](https://preview.nextjs.org/docs/
 
 Use `<Link prefetch={true}>` on high-value links to also resolve the destination's per-link data (`params`, `searchParams`, the full URL) at prefetch time. Each such link can wake the server for a prerender, so reserve it for routes users predictably visit next. See [Optimizing prefetching](https://preview.nextjs.org/docs/app/guides/optimizing-prefetching).
 
+That cost is a choice, not a given. When a list's rows should all prefetch, make the per-link payload small first: gate the heavy part of the destination (message bodies, full records) behind `unstable_navigation()` and keep the prefetched part to what the first paint needs (a header, a summary). Then `prefetch={true}` on every row in view is affordable. Use hover prefetch for long-tail links that are costly or rarely followed.
+
 Can't enable `partialPrefetching` app-wide yet? Opt in per route with `export const prefetch = 'partial'` on the destination, then drop the per-route exports once the global flag is on — see [Adopting Partial Prefetching](https://preview.nextjs.org/docs/app/guides/adopting-partial-prefetching) for the incremental path and [prefetch config](https://preview.nextjs.org/docs/app/api-reference/file-conventions/route-segment-config/prefetch) for the options. To check that navigation actually feels instant, see [Validating instant navigation](#validating-instant-navigation).
 
 ### Three render stages, two gates

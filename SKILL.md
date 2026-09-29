@@ -4,7 +4,7 @@ description: Build or audit Next.js 16 App Router apps using a next-beats-style 
 license: MIT
 metadata:
   author: aurorascharff
-  version: "1.3.16"
+  version: "1.4.0"
 ---
 
 # Next.js App Architecture
@@ -64,7 +64,7 @@ Run these in order for build-from-scratch, feature work, or audits. Each step na
 5. **Build the component + skeleton.** `features/<domain>/components/<name>.tsx`: an async server component that awaits its own query from minimal props; `'use client'` only on interactive leaves.
    → `references/components.md`; for a client data library or strict-SPA/CSR feature → `references/single-page-applications.md`.
    ✓ Component receives IDs/handles/parsed filters or already-resolved records, not `params`; skeleton is a sibling export at the end; no alias skeleton wrappers.
-6. **Compose the page.** `app/<route>/page.tsx`: synchronous, `params.then()` / `Promise.all(...).then(...)`, place Suspense around data bodies, and wrap fallible sections in an error boundary.
+6. **Compose the page.** `app/<route>/page.tsx`: synchronous, `params.then()` / `Promise.all(...).then(...)`, place Suspense around data bodies, and wrap the section that can fail independently in an error boundary.
    → `references/pages-suspense.md`; with `cacheComponents: true`, also → `references/instant-navigation.md` for which links prefetch and which reads wait for the navigation.
    ✓ Route props become plain values; stable cards/sections wrap Suspense when they set layout; boundaries stay visible at the page.
 7. **Add interaction** (if any): optimistic updates, pending state, toasts, confirmation.
@@ -89,13 +89,15 @@ Inspect the diff against every invariant — each is checkable by reading the ch
 - [ ] `unstable_prefetch()` / `unstable_navigation()` are awaited in the component before its query call; no wrapper query exists just to hold the gate.
 - [ ] Every `*-queries.ts` starts with `import 'server-only'`; every `*-actions.ts` with `'use server'`.
 - [ ] With `cacheComponents: true`, reusable reads use `'use cache'` / `cacheTag` / `cacheLife`, or `'use cache: private'` / `'use cache: remote'` when appropriate; any dynamic read is intentional and justified.
+- [ ] Reads whose every write calls `updateTag()` use `cacheLife('max')`; a shorter profile is reserved for data that changes outside the app's actions.
 - [ ] Mutations touching cached reads call `updateTag()` / `revalidateTag(..., 'max')` for the matching tags; `refresh()` is not a substitute for tag invalidation.
-- [ ] `unstable_prefetch()` / `unstable_navigation()` are awaited in an uncached query wrapper, never inside a cache scope, and `prefetch={true}` is reserved for links users predictably follow.
+- [ ] `prefetch={true}` is reserved for links users predictably follow, or for rows whose per-link prefetch was made cheap by gating the heavy part behind `unstable_navigation()`.
 - [ ] Action files are named `<folder>-actions.ts`; no entity-owned sub-concept spawned its own folder, and cross-domain product features do not take ownership of entity queries/actions.
 - [ ] Features with both server tags and client query keys define them once in a pure `<domain>-cache.ts`; queries, actions, hydration, query options, and hooks import from it.
 - [ ] Feature-local client-support files sit in the smallest fitting place: query options at the feature root, `use-*` hook wrappers in `hooks/`, leaf components in `components/`, and shared support only after real cross-feature reuse.
-- [ ] `'use client'` components are leaves — they import actions/hooks/providers, not async server components.
+- [ ] `'use client'` components are leaves — they import actions/hooks/providers, not async server components. A client component that needs server data has a server half in the feature (`ComposePanel` → `ComposePanelClient`); no page or layout creates query promises for it.
 - [ ] Client leaves use `useOptimistic`, transitions, reducers, URL state, or form actions for interaction; they do not call `setState` in effects for derived React state.
+- [ ] Forms whose action can reject input keep what the user typed: the action state returns the submitted values and the fields read them as `defaultValue`.
 - [ ] Mutations validate their input and invalidate the affected data.
 
 ## Reference index

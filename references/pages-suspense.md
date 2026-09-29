@@ -156,7 +156,7 @@ Content that shares the first section's reveal (a reply form under a message bod
 
 ### Persistent chrome renders above the boundary
 
-Chrome that should survive a data load (a section header, a toolbar) is replaced every time the boundary resolves if it renders inside it. Render it as a sibling above the boundary. Client state shared between the chrome and the data below it lives in a provider that wraps both, keyed by the route values that should reset it. A control inside the chrome that needs the data gets its own small `<Suspense>`, with the same control disabled as the fallback.
+Chrome that should survive a data load (a section header, a toolbar) is replaced every time the boundary resolves if it renders inside it. Render it as a sibling above the boundary. Client state shared between the chrome and the data below it lives in a provider that wraps both. It resets from a prop compared during render (see `references/components.md`), not a `key`, which would remount the chrome and the boundary with it; key only the boundary whose content should restart. A control inside the chrome that needs the data gets its own small `<Suspense>`, with the same control disabled as the fallback.
 
 ## One route, several variants
 
@@ -164,6 +164,8 @@ When a dynamic route renders different UI per param value (a `[step]` wizard, a 
 
 1. The route boundary's fallback is a neutral splash: the variant's frame (card, board) with the animated brand mark centered, `role="status"` and an `aria-label`.
 2. Inside `params.then(...)`, once the variant is known, a plain `<Suspense fallback={<VariantSkeleton ... />}>` wraps the data component with the exact skeleton for that variant.
+
+Nest a second boundary only when its fallback differs from the outer one. A boundary directly inside another with the same fallback adds nothing: one boundary around `params.then(...)` covers both the route value and the data it loads.
 
 Verify both direct visits and client navigations: the neutral outer fallback should remain valid until the variant-specific skeleton or content is available. Keep one dynamic route when the steps share one cohesive page structure; split routes only when the product structure warrants it.
 
@@ -246,7 +248,7 @@ The same applies to feature-level skeleton aliases. If a variant only passes pro
 
 ## Error boundaries
 
-Wrap fallible sections in a Next.js-aware error boundary so one failure doesn't take down the page. Build it on [`catchError`](https://preview.nextjs.org/docs/app/api-reference/functions/catchError) from `next/error` (its `ErrorInfo` gives you a `retry()` that re-fetches server data) — it understands Next's control-flow throws (`notFound()`, `redirect()`, `unauthorized()`, `forbidden()`) and won't swallow them. Place the boundary around the suspending section, in the page:
+Wrap the section that can fail on its own (the part below the fold, a secondary panel) in a Next.js-aware error boundary so it doesn't take down the page. Don't wrap every boundary: when the main content fails there is nothing useful left to show, and route-segment `error.tsx` handles it. Build it on [`catchError`](https://preview.nextjs.org/docs/app/api-reference/functions/catchError) from `next/error` (its `ErrorInfo` gives you a `retry()` that re-fetches server data) — it understands Next's control-flow throws (`notFound()`, `redirect()`, `unauthorized()`, `forbidden()`) and won't swallow them. Place the boundary around the suspending section, in the page:
 
 ```tsx
 <ErrorBoundary title="Replies didn't load">
@@ -311,7 +313,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     <html>
       <body>
         <Suspense>
-          <AuthGate userPromise={getCurrentUser()} />
+          <AuthGate />
         </Suspense>
         <main>{children}</main>
       </body>
@@ -320,7 +322,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
 }
 ```
 
-`AuthGate` is a client component that resolves the promise with `use()` so the dialog can render conditionally without server-side branching.
+`AuthGate` is the feature's server half: it reads the current user and renders `AuthGateClient`, which decides whether to show the dialog. The layout imports the component, not the query (see "Server half, client half" in `references/components.md`).
 
 ## CLS prevention
 

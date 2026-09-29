@@ -8,7 +8,7 @@ Interaction decisions on top of the architecture: which feedback mechanism to re
 | --------- | --------- | -------- |
 | Mutation unlikely to fail (favorite, vote, follow) | [`useOptimistic`](https://react.dev/reference/react/useOptimistic) | Update immediately, roll back on throw. Set it inside a transition; inside `<form action>` React opens the transition for you. Use a reducer for counters. |
 | No optimistic fit (filters, sort, navigation) | [`useTransition`](https://react.dev/reference/react/useTransition) + `data-pending` | Put `data-pending` on the pending node; let ancestors react with CSS (`has-data-pending:` for a direct parent, `group-has-data-pending:` further up) so it bubbles without prop drilling. |
-| Form field validation ("fix this field") | [`useActionState`](https://react.dev/reference/react/useActionState) | Action returns `{ error }`; render inline with `aria-invalid` + `role="alert"`. |
+| Errors only the action can find (validation, moderation, a taken slot) | [`useActionState`](https://react.dev/reference/react/useActionState) | Action returns `{ error }` plus the submitted values; render the error inline with `aria-invalid` + `role="alert"`. |
 | Submit disable + spinner | [`useFormStatus`](https://react.dev/reference/react-dom/hooks/useFormStatus) | Call it from a child of `<form>`, not the form component itself. |
 | Selections that live in the URL (filters, wizard steps) | `useOptimistic(draft)` + [`router.replace`](https://preview.nextjs.org/docs/app/api-reference/functions/use-router) inside `startTransition` | The URL is the source of truth; the optimistic draft keeps the control responsive until the server confirms the new search params. Submit the final draft to the action through hidden inputs and re-validate it there. |
 | One-shot result with no visible change | toast | See below. |
@@ -61,6 +61,26 @@ Every click that starts a write or a navigation shows its pending state on the t
 ## Forms
 
 Validate locally before submitting when the missing field is already on the client, and show field errors inline without changing the card's geometry. Reserve `useActionState` for errors that need the action result. When a completed action changes the user's task (a reservation, a checkout), replace the form with the confirmation instead of toasting.
+
+### Keep the draft when the action rejects it
+
+React resets a `<form action>` when the action finishes, whatever it returns, so an error result also clears the fields. See [`<form>`](https://react.dev/reference/react-dom/components/form). Return the submitted values with the error and read them back as `defaultValue`:
+
+```tsx
+const INITIAL = { body: '', error: null as string | null, sent: 0 };
+
+const [{ body, error, sent }, send] = useActionState(async (state: typeof INITIAL, formData: FormData) => {
+  const result = await sendReply(formData);
+  if (!result.ok) return { ...state, body: String(formData.get('body') ?? ''), error: result.error };
+  return { body: '', error: null, sent: state.sent + 1 };
+}, INITIAL);
+
+<form action={send} key={sent}>
+  <textarea defaultValue={body} name="body" />
+</form>
+```
+
+The reset only covers native fields. State inside client fields (picked recipients, an expanded Cc row) survives it, so key the form on a success counter in the action state to clear those after a send. Run the call-site work that belongs to the result (a toast, closing a panel) inside the action, where the result is in hand, instead of mirroring it into `useState`.
 
 ### Search and filter forms
 

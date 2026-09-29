@@ -36,7 +36,7 @@ Dynamic reads are the exception: use them for values that must be recomputed for
 
 | Data | Directive | Notes |
 | ---- | --------- | ----- |
-| Cacheable across users (public listings, computed pages) | [`'use cache'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache) | Add [`cacheTag`](https://preview.nextjs.org/docs/app/api-reference/functions/cacheTag) (a global + a scoped tag) and a [`cacheLife`](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/cacheLife) profile. |
+| Cacheable across users (public listings, computed pages) | [`'use cache'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache) | Add [`cacheTag`](https://preview.nextjs.org/docs/app/api-reference/functions/cacheTag) (a global + a scoped tag) and a [`cacheLife`](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/cacheLife) profile (see below). |
 | Per-user / reads cookies, headers, session | [`'use cache: private'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-private) | May reuse matching calls within one request and keep rendered output in browser memory for its `stale` time; it is not stored in the server cache across production requests or across reloads. |
 | Shared result that needs durable storage across server instances | [`'use cache: remote'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-remote) | Use when the hit rate and upstream cost justify a shared cache-handler lookup, including rate-limited services. |
 | Genuinely dynamic per request | none | Must be justified. Read inside `<Suspense>`; mutations use `refresh()` because no tag exists. |
@@ -54,6 +54,10 @@ Prefer `io()` over [`connection()`](https://preview.nextjs.org/docs/app/api-refe
 ### A live async layer needs its own boundary
 
 For an async read that must be fresh on every request (stock, presence, a live count), leave it uncached and give it its own `<Suspense>` boundary. The official [Caching guide](https://preview.nextjs.org/docs/app/getting-started/caching#streaming-uncached-data) covers how its fallback joins the shell while the read streams at request time. Use `io()` or `connection()` only for the synchronous request-time cases described in their API references.
+
+### Choose the lifetime by who can change the data
+
+When every write to a read goes through the app's actions and each one calls `updateTag()` for it, the lifetime is only a fallback for changes made outside the app, so use `cacheLife('max')`. Pick a shorter profile only for data that changes somewhere no action can tag: an upstream API, another service writing to the same database, a value that ages on its own. Match it to how stale that data may get.
 
 ## Decide how to invalidate
 
