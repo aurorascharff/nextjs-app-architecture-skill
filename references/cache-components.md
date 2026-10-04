@@ -37,13 +37,14 @@ Dynamic reads are the exception: use them for values that must be recomputed for
 | Data | Directive | Notes |
 | ---- | --------- | ----- |
 | Cacheable across users (public listings, computed pages) | [`'use cache'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache) | Add [`cacheTag`](https://preview.nextjs.org/docs/app/api-reference/functions/cacheTag) (a global + a scoped tag) and a [`cacheLife`](https://preview.nextjs.org/docs/app/api-reference/config/next-config-js/cacheLife) profile (see below). |
-| Per-user / reads cookies, headers, session | [`'use cache: private'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-private) | May reuse matching calls within one request and keep rendered output in browser memory for its `stale` time; it is not stored in the server cache across production requests or across reloads. |
 | Shared result that needs durable storage across server instances | [`'use cache: remote'`](https://preview.nextjs.org/docs/app/api-reference/directives/use-cache-remote) | Use when the hit rate and upstream cost justify a shared cache-handler lookup, including rate-limited services. |
 | Genuinely dynamic per request | none | Must be justified. Read inside `<Suspense>`; mutations use `refresh()` because no tag exists. |
 
 When a flow needs the same data twice — once to *decide* and once to *render* — prefer one cached read so both callers share an identity when that entry is available. Add a lighter "exists" query only when it is measurably cheaper or has a different freshness requirement.
 
-Cache the **query** when its result should be reused independently of UI. Cache the **component** when the rendered output is the reusable unit and its props are stable. Usually cache one layer; add a second cache scope only when it has a distinct key, lifetime, or measured rendering benefit.
+Cache the **query** when its result should be reused independently of UI. Cache the **component** when the rendered output is the reusable unit and its props are stable. Usually cache one layer; add a second cache scope only when it has a distinct key, lifetime, or measured rendering benefit. For SWR or TanStack Query hydration, follow `references/single-page-applications.md` and its official guide links rather than defining a separate policy here.
+
+For personalized output that should be shared across server requests, keep request API reads in a thin uncached feature wrapper and pass only trusted, normalized identity values into the cached query or component. Do not choose `'use cache: private'` merely because the result is per-user; follow the version-matched [Authentication with Cache Components guide](https://preview.nextjs.org/docs/app/guides/authentication-with-cache-components) for the directive's current semantics.
 
 ## Keep a synchronous value out of the shell
 
@@ -84,7 +85,7 @@ When cached server data seeds SWR, TanStack Query, or another browser cache, fol
 When `next build` fails under Cache Components, map the error back to an architecture rule instead of patching locally:
 
 - Async work without `'use cache'` and without an ancestor `<Suspense>` → cache the reusable read, or wrap a justified dynamic read in a page-owned `<Suspense>`.
-- Request data inside `'use cache'` → switch to `'use cache: private'` when it is per-user cacheable, or keep it dynamic with a documented reason.
+- Request data inside `'use cache'` → for cross-request reuse, resolve it in an uncached feature wrapper and pass trusted, normalized values into the cache scope; otherwise follow the version-matched private-cache guidance or keep the read dynamic with a documented reason.
 - `await params` / `await searchParams` at the top of a page → keep the page synchronous and move the read into `params.then()` / `searchParams.then()`.
 - Sync request-time values (`new Date()`, `Math.random()`, sync storage reads) captured in the shell → cache stable values, or use [`io()`](https://preview.nextjs.org/docs/app/api-reference/functions/io) for per-request values.
 
