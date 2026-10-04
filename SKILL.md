@@ -89,6 +89,7 @@ Inspect the diff against every invariant — each is checkable by reading the ch
 - [ ] `unstable_prefetch()` / `unstable_navigation()` are awaited in the component before its query call; no wrapper query exists just to hold the gate.
 - [ ] Every `*-queries.ts` starts with `import 'server-only'`; every `*-actions.ts` with `'use server'`.
 - [ ] With `cacheComponents: true`, reusable reads use `'use cache'` / `cacheTag` / `cacheLife`, or `'use cache: private'` / `'use cache: remote'` when appropriate; any dynamic read is intentional and justified.
+- [ ] A personalized shared-cache scope receives trusted, normalized identity values from an uncached feature wrapper; it never reads request APIs or trusts a client-provided identity inside the cache scope.
 - [ ] Reads whose every write calls `updateTag()` use `cacheLife('max')`; a shorter profile is reserved for data that changes outside the app's actions.
 - [ ] Mutations touching cached reads call `updateTag()` / `revalidateTag(..., 'max')` for the matching tags; `refresh()` is not a substitute for tag invalidation.
 - [ ] `prefetch={true}` is reserved for links users predictably follow, or for rows whose per-link prefetch was made cheap by gating the heavy part behind `unstable_navigation()`.

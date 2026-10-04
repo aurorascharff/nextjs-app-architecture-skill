@@ -41,6 +41,8 @@ Use the Next.js [TanStack Query guide](https://nextjs.org/docs/app/guides/client
 
 The architecture rule here is ownership only: the async feature component owns the initial server seed and hydration provider, while the page owns the feature's Suspense boundary and loading sequence.
 
+For personalized hydration that should be reused across server requests, also follow the trusted-identity boundary in `references/cache-components.md`.
+
 ## Mutate without drift
 
 Let the client library own the optimistic browser update, rollback, and authoritative response. Let the write invalidate the server tag only after stored data changes. Do not add polling as a cache-coordination mechanism; add focus revalidation, intervals, SSE, or WebSockets only when the product actually needs external updates to appear automatically.

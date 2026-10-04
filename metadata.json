@@ -13,6 +13,7 @@
     "https://preview.nextjs.org/docs/app/api-reference/functions/updateTag",
     "https://preview.nextjs.org/docs/app/guides/adopting-partial-prefetching",
     "https://preview.nextjs.org/docs/app/guides/migrating-to-cache-components",
+    "https://preview.nextjs.org/docs/app/guides/authentication-with-cache-components",
     "https://preview.nextjs.org/docs/app/guides/interactive-apps",
     "https://nextjs.org/docs/app/guides/client-side-data-fetching/tanstack-query",
     "https://nextjs.org/docs/app/guides/client-side-data-fetching/swr",
