@@ -45,11 +45,11 @@ Cache the Server Component that owns `<HydrationBoundary>` or `<SWRConfig>` when
 
 Choose the component directive from the data's sharing boundary:
 
-- Use `'use cache'` with a reusable profile and matching tags when the rendered output is safe to share across requests.
+- Use `'use cache'` with a reusable profile and matching tags when the server should reuse the rendered output. For personalized output, resolve cookies or session state in a thin uncached wrapper and pass the trusted user or tenant ID into the cached hydration owner; its arguments become part of the cache key.
 - Use `'use cache'` with `cacheLife({ expire: 0 })` when the output may stay in the current browser's client cache but must not be reused by a later server request.
-- Use `'use cache: private'` with an explicit client `stale` time when the component reads cookies, headers, session state, or other request-specific data. It is not stored in the server cache across production requests.
+- Use `'use cache: private'` with an explicit client `stale` time only when runtime request APIs must remain inside the cached scope and cross-request server reuse is not required. It is not stored in the server cache across production requests.
 
-Treat library hydration metadata as part of the seeded snapshot. Create the `QueryClient`, dehydrated state, or SWR fallback inside the cached component; do not cache those objects separately as the server data source. Apply the component's tags to every seeded read whose invalidation must refresh the rendered payload.
+Do not accept the cache identity from untrusted client input; derive it from authenticated request state on the server. Treat library hydration metadata as part of the seeded snapshot. Create the `QueryClient`, dehydrated state, or SWR fallback inside the cached component; do not cache those objects separately as the server data source. Apply the component's tags to every seeded read whose invalidation must refresh the rendered payload.
 
 For TanStack Query, prefer ordinary `dehydrate()` inside this cached boundary. Build hydration state manually only when the boundary cannot be cached and every seeded query is already resolved; a hand-built resolved-query state cannot represent pending-query dehydration.
 
