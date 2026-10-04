@@ -43,7 +43,7 @@ Dynamic reads are the exception: use them for values that must be recomputed for
 
 When a flow needs the same data twice — once to *decide* and once to *render* — prefer one cached read so both callers share an identity when that entry is available. Add a lighter "exists" query only when it is measurably cheaper or has a different freshness requirement.
 
-Cache the **query** when its result should be reused independently of UI. Cache the **component** when the rendered output is the reusable unit and its props are stable. Usually cache one layer; add a second cache scope only when it has a distinct key, lifetime, or measured rendering benefit.
+Cache the **query** when its result should be reused independently of UI. Cache the **component** when the rendered output is the reusable unit and its props are stable. Usually cache one layer; add a second cache scope only when it has a distinct key, lifetime, or measured rendering benefit. A component that seeds a browser cache is one such case: its rendered hydration payload and metadata need a lifecycle separate from the underlying server query. Follow `references/single-page-applications.md` for that boundary.
 
 ## Keep a synchronous value out of the shell
 
