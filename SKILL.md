@@ -94,7 +94,6 @@ Inspect the diff against every invariant — each is checkable by reading the ch
 - [ ] `prefetch={true}` is reserved for links users predictably follow, or for rows whose per-link prefetch was made cheap by gating the heavy part behind `unstable_navigation()`.
 - [ ] Action files are named `<folder>-actions.ts`; no entity-owned sub-concept spawned its own folder, and cross-domain product features do not take ownership of entity queries/actions.
 - [ ] Features with both server tags and client query keys define them once in a pure `<domain>-cache.ts`; queries, actions, hydration, query options, and hooks import from it.
-- [ ] A Server Component that seeds a browser cache owns the hydration provider and, under Cache Components, caches that rendered hydration output with the correct server-reusable (including trusted per-user keys), browser-only, or private policy.
 - [ ] Feature-local client-support files sit in the smallest fitting place: query options at the feature root, `use-*` hook wrappers in `hooks/`, leaf components in `components/`, and shared support only after real cross-feature reuse.
 - [ ] `'use client'` components are leaves — they import actions/hooks/providers, not async server components. A client component that needs server data has a server half in the feature (`ComposePanel` → `ComposePanelClient`); no page or layout creates query promises for it.
 - [ ] Client leaves use `useOptimistic`, transitions, reducers, URL state, or form actions for interaction; they do not call `setState` in effects for derived React state.

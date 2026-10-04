@@ -37,21 +37,9 @@ Do not move the initial read to the browser just because the feature also has a 
 
 ## Coordinate Cache Components
 
-The server cache and browser cache have independent freshness policies. Do not mirror `cacheLife` into `staleTime`, polling intervals, or SWR revalidation settings. Coordinate identities and invalidation, not durations.
+Use the Next.js [TanStack Query guide](https://nextjs.org/docs/app/guides/client-side-data-fetching/tanstack-query) or [SWR guide](https://nextjs.org/docs/app/guides/client-side-data-fetching/swr) as the source of truth for cache boundaries, sharing policy, lifetimes, tags, and hydration behavior. Do not reproduce that framework guidance in this skill.
 
-For tag-driven data, a mutation updates the client cache for immediate feedback and invalidates the same server tag used by the seeded read. For a time-driven server read, choose its `cacheLife` from the server data's freshness requirement.
-
-Cache the Server Component that owns `<HydrationBoundary>` or `<SWRConfig>` when the client router should reuse its rendered RSC payload. This component cache is a distinct layer even when the underlying query is already cached: the query cache reuses server data, while the component cache keeps the seeded data and hydration metadata on one lifecycle.
-
-Choose the component directive from the data's sharing boundary:
-
-- Use `'use cache'` with a reusable profile and matching tags when the server should reuse the rendered output. For personalized output, resolve cookies or session state in a thin uncached wrapper and pass the trusted user or tenant ID into the cached hydration owner; its arguments become part of the cache key.
-- Use `'use cache'` with `cacheLife({ expire: 0 })` when the output may stay in the current browser's client cache but must not be reused by a later server request.
-- Use `'use cache: private'` with an explicit client `stale` time only when runtime request APIs must remain inside the cached scope and cross-request server reuse is not required. It is not stored in the server cache across production requests.
-
-Do not accept the cache identity from untrusted client input; derive it from authenticated request state on the server. Treat library hydration metadata as part of the seeded snapshot. Create the `QueryClient`, dehydrated state, or SWR fallback inside the cached component; do not cache those objects separately as the server data source. Apply the component's tags to every seeded read whose invalidation must refresh the rendered payload.
-
-For TanStack Query, prefer ordinary `dehydrate()` inside this cached boundary. Build hydration state manually only when the boundary cannot be cached and every seeded query is already resolved; a hand-built resolved-query state cannot represent pending-query dehydration.
+The architecture rule here is ownership only: the async feature component owns the initial server seed and hydration provider, while the page owns the feature's Suspense boundary and loading sequence.
 
 ## Mutate without drift
 
