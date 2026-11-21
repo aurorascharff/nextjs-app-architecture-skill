@@ -1,5 +1,9 @@
 # Next.js App Architecture Skill
 
+<!-- yarkr:badges:start -->
+[![Indexed on Yarkr](https://api.yarkr.com/functions/v1/api/api/v1/badges/repos/aurorascharff/nextjs-app-architecture-skill/version.svg)](https://yarkr.com/arks/aurorascharff/nextjs-app-architecture-skill)
+<!-- yarkr:badges:end -->
+
 An agent skill for building or auditing Next.js 16+ App Router apps. It packages the patterns from [Component Architecture for React Server Components](https://aurorascharff.no/posts/component-architecture-for-react-server-components/) and the [next-beats](https://github.com/vercel-labs/next-beats) reference app into a form AI coding agents can load and apply.
 
 ## Install
@@ -7,6 +11,38 @@ An agent skill for building or auditing Next.js 16+ App Router apps. It packages
 ```bash
 npx skills add aurorascharff/nextjs-app-architecture-skill
 ```
+
+<!-- yarkr:install:start -->
+## Install with Yarkr
+
+This repo is indexed on [Yarkr](https://yarkr.com/arks/aurorascharff/nextjs-app-architecture-skill) as the ark [aurorascharff/nextjs-app-architecture-skill](https://yarkr.com/arks/aurorascharff/nextjs-app-architecture-skill), so its skills install into Claude Code, Codex, Cursor and other agent harnesses with one command.
+
+### CLI
+
+Install the whole ark, which Yarkr keeps equal to this repo:
+
+```bash
+npx yarkr-cli sync aurorascharff/nextjs-app-architecture-skill
+```
+
+Or add individual skills:
+
+```bash
+npx yarkr-cli add skill:aurorascharff/nextjs-app-architecture-skill/nextjs-app-architecture
+```
+
+No Node.js? `curl -fsSL https://yarkr.com/install.sh | sh` (macOS, Linux) or `irm https://yarkr.com/install.ps1 | iex` (Windows PowerShell) installs `yarkr` as a standalone binary; then type `yarkr` in place of `npx yarkr-cli`.
+
+### MCP
+
+Connect your agent to the ark over MCP:
+
+```bash
+npx yarkr-cli mcp add aurorascharff/nextjs-app-architecture-skill
+```
+
+Or point any MCP client at `https://api.yarkr.com/functions/v1/api/mcp/o/aurorascharff/nextjs-app-architecture-skill`.
+<!-- yarkr:install:end -->
 
 ## Rules
 
